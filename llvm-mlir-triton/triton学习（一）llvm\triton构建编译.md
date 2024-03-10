@@ -1,4 +1,4 @@
-# trition学习（一）
+# triton学习（一）llvm\triton构建编译.md
 
 ## 环境准备
 - 硬件环境 n卡8G 40系列
