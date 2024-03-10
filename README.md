@@ -14,7 +14,7 @@
 - 学习cuda attention算法
 ## CUDA优化SGEMM
 ## LLVM/MLIR/triton
-- [构建编译](https://github.com/carolove/Study-with-Machine-Learning/blob/main/llvm-mlir-triton/triton%E5%AD%A6%E4%B9%A0%EF%BC%88%E4%B8%80%EF%BC%89llvm%5Ctriton%E6%9E%84%E5%BB%BA%E7%BC%96%E8%AF%91.md)
+- [构建编译](./triton学习（一）llvm\triton构建编译.md)
 - 学习triton 的python DSL
 - 学习triton的jit 相关
 - 用triton jit学习实现基础算子（可能要拆的更细才行）
