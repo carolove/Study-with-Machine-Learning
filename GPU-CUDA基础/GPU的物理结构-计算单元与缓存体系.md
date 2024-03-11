@@ -28,9 +28,9 @@
 
 # CUDA基础
 ## 名词解释
-- Thread
-- Block
 - Grid
-- Warp GPU执行程序时的调度单位，同在一个warp的线程，以不同数据资源执行相同的指令,这就是所谓 SIMT
+- Block
+- Thread
+- Warp GPU执行程序时的调度单位，同在一个warp的线程，以不同数据资源执行相同的指令,这就是所谓 SIMT，其实是和gpu中的wrap对应，也就是sm中的计算组，每个组还有32个cuda core，也就是一个warp的单位应该为32个thread
 - 半精度（FP16）
 - 全精度（FP32）
