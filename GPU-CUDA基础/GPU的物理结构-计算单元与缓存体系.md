@@ -9,7 +9,7 @@
 - 处理块，每个sm有四个处理块
 - CUDA core，每个sm有128个cuda core,分为四个处理块，整个gpu有3072个cuda core = （16 FP32 + 16 FP32/INT32 ）* 4 * 2 * 4 * 3
 - Warp，每个处理块有一个Warp调度器
-- 寄存器文件，每个处理块有64KB寄存器文件
+- 寄存器文件，每个处理块有64KB寄存器文件，每个sm有256KB=64KB * 4
 - 每个处理块，有16个专门用于FP32的CUDA Core，16个可以在FP32和INT32之间切换的CUDA Core，也就是每个处理块有32个cuda core
 ## N卡GPU的内存以及缓存
 ### CPU内存
