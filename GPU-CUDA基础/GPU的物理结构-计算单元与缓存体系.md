@@ -5,7 +5,12 @@
 - GPC，3个
 - TPC，每个GPC有四个TPC
 - SM ，每个TPC有两个SM，sm总数为24
-- CUDA core，单精度计算单元 FP32,每个sm有128个cuda core，两个cuda core可以组合为一个全精度core，因此一个sm有64个全精度core
+- 共享内存，每个sm有128KB一级数据缓存/共享内存
+- 处理块，每个sm有四个处理块
+- CUDA core，每个sm有128个cuda core,分为四个处理块
+- Warp，每个处理块有一个Warp调度器
+- 寄存器文件，每个处理块有64KB寄存器文件
+- 每个处理块，有16个专门用于FP32的CUDA Core，16个可以在FP32和INT32之间切换的CUDA Core，也就是每个处理块有32个cuda core
 ## N卡GPU的内存以及缓存
 ### CPU内存
 ### 全局内存
