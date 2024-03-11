@@ -1,8 +1,11 @@
 # GPU的物理结构-计算单元与内存以及缓存体系
 
 ## N卡GPU的计算单元
-### N卡GPU计算单元核心名词
-- SM 比如4060 笔记本显卡的sm数为24
+### N卡GPU计算单元核心名词 以4060 笔记本为例
+- GPC，3个
+- TPC，每个GPC有四个TPC
+- SM ，每个TPC有两个SM，sm总数为24
+- CUDA core，单精度计算单元 FP16,每个sm有128个cuda core，两个cuda core可以组合为一个全精度core，因此一个sm有64个全精度core
 ## N卡GPU的内存以及缓存
 ### CPU内存
 ### 全局内存
