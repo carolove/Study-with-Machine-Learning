@@ -10,4 +10,10 @@
 - 源码修改的结构
 - 在源码主要层次/模块（frontend/core/backend/driver）等修改逻辑
 
-## cos/sin算子修改的源码结构
+## cos/sin算子修改的模块
+- frontend/python binding 语义支持
+- core/ir GPU dialect 语义支持以及lowering支持
+
+## cos/sin frontend前端支持
+### python binding
+- 
