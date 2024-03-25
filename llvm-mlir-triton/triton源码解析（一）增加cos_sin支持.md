@@ -16,4 +16,12 @@
 
 ## cos/sin frontend前端支持
 ### python binding
-- 
+- python/triton/language.py 加入两个python buildin函数调用前端定义的函数
+- python/src/triton.cc frondend 加入cos sin两个函数的定义，然后会调用core/ir提供的dispatch逻辑
+
+## cos/sin core/ir模块逻辑
+- lib/ir/dispatch.cc   主要作用就是在core/ir层定一个入口
+- lib/ir/builder.cc  会把从python调用  builder 指令层
+- lib/ir/instructions.cc 会通过 指令层 真正将python dsl开始调用生成层
+- lib/codegen/selection/generator.cc 这是将python dsl通过生成，生成到llvm ir，后继通过gpu dialect生成最终的ptx码，整个generator层才是真正实现dsl解析
+  
