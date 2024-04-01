@@ -13,7 +13,11 @@
 - cuda实现matmul算子
 - 学习cuda attention算法
 ## CUDA优化SGEMM
-## LLVM/MLIR/triton
+## LLVM/MLIR
+- 主要通过[MLIR For Beginners](https://github.com/j2kun/mlir-tutorial)学习mlir
+### MLIR/mojo学习
+- 通过mojo学习mlir
+### MLIR/triton
 - [构建编译](llvm-mlir-triton/triton学习（一）llvm\triton构建编译.md)
 - 学习triton 的python DSL
 - 学习triton的jit 相关
