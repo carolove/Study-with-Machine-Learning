@@ -1,2 +1,3 @@
 - [[MLIR] 使用MLIR完成一个端到端的编译流程](https://www.bilibili.com/video/BV1Wp4y1z72d/),提到的主要的要点就是从tf graph可以有tf以及HLO社区提供的opt以及llvm opt，其实就是各种pass链，pass链其实就是各层dialect下降转换的过程，其次还提到如果最终生成二进制库文件一定要加入 c-omit-wrapper=1的选项，才可以提供c调用二进制api
-- 
+- [pybind11](https://www.bilibili.com/video/BV1s7411K7fp/)需要自己动手也去做一下pybind11的学习，来展示相关学习
+- [toy tutorial](https://www.bilibili.com/video/BV1s7411K7rR/)这个其实主要讲解了如何利用mlir来构建一个最简单的语言toy的过程，其中的知识点包括，dialect、operation、pass manager、各类dialect的要点，比如toy dialect、linalg dialect、affine dialect等等，以及用pass manager来调度串行转换以及优化的过程
