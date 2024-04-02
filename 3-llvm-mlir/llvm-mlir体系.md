@@ -14,7 +14,7 @@
 - a prefix namespace
 - a list of types
 - a list of operactions,like llvm-ir's instructions
-- passes, analysis\transformations（语义优化变形）\dialect conversions
+- passes, analysis\transformations（语义优化变形）\dialect conversions，pass是在编译过程中对中间表示（Intermediate Representation，IR）进行转换和优化的步骤就是一个调度manager的逻辑
 
 ### dialect的生成
 - 可以借助ODS模块，使用.td文件用mlir-tblgen来自动生成dialect c++，包括dialect、operation等等
