@@ -1,0 +1,2 @@
+- [[MLIR] 使用MLIR完成一个端到端的编译流程](https://www.bilibili.com/video/BV1Wp4y1z72d/),提到的主要的要点就是从tf graph可以有tf以及HLO社区提供的opt以及llvm opt，其实就是各种pass链，pass链其实就是各层dialect下降转换的过程，其次还提到如果最终生成二进制库文件一定要加入 c-omit-wrapper=1的选项，才可以提供c调用二进制api
+- 
