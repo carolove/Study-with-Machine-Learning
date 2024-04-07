@@ -103,3 +103,54 @@ dim3 gridDim(CEIL_DIV(M, 32), CEIL_DIV(N, 32));
 dim3 blockDim(32 * 32);
 sgemm_coalescing<<<gridDim, blockDim>>>(M, N, K, alpha, A, B, beta, C);
 ```
+### 全局内存连续访问+共享内存
+```
+/*
+dim3 blockDim(1024); 只要是存在共享内存加速的，thread都应该是一维的，这样才便于访问数据做block分段划区
+dim3 gridDim(CEIL_DIV(M, 32), CEIL_DIV(N, 32));
+mysgemm_v2<32><<<gridDim, blockDim>>>(M, N, K, alpha, A, B, beta, C);
+*/
+
+template<const int BLOCK_SIZE>
+__global__ void mysgemm_v2(int M, int N, int K, float alpha, float *A, float *B, float beta, float *C) {
+    // bx by用于As Bs subblock指针偏移
+    int bx = blockIdx.x;
+    int by = blockIdx.y;
+
+    const int BM = BLOCK_SIZE;
+    const int BN = BLOCK_SIZE;
+    const int BK = BLOCK_SIZE;
+
+    // tx ty用于数据实际指针偏移，也就是内存数据加载
+    int tx = threadIdx.x % BN;
+    int ty = threadIdx.x / BN;
+
+    // 申请共享内存空间
+    __shared__ float As[BM * BK];
+    __shared__ float Bs[BK * BN];
+
+    // 移动到当前block
+    A = &A[by * BM * K];
+    B = &B[bx * BN];
+    C = &C[by * BM * N + bx * BN];
+
+    float tmp = 0.;
+    for (int k = 0; k < K; k += BK) {
+        // 缓存A_tile和B_tile
+        // 单个thread只从A、B全局内存中缓存一个数据到As Bs中
+        // 缓存结束后，对应的缓存数据，是有可能被其他并行thread再次访问的
+        As[ty * BK + tx] = A[ty * K + tx];
+        Bs[ty * BN + tx] = B[ty * N + tx];
+        // 同步所有线程缓存完成 
+        __syncthreads();
+        A += BK;
+        B += BK * N;
+        for (int i = 0; i < BK; i++) {
+            tmp += As[ty * BK + i] * Bs[i * BN + tx];
+        }
+        // FMA计算需要读取缓存数据，在新一轮写入缓存前进行同步，确保所有线程计算完成
+        __syncthreads();
+    }
+    C[ty * N + tx] = alpha * tmp + beta * C[ty * N + tx];
+}
+```
