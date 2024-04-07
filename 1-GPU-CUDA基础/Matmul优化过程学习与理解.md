@@ -141,7 +141,8 @@ __global__ void mysgemm_v2(int M, int N, int K, float alpha, float *A, float *B,
         // 缓存结束后，对应的缓存数据，是有可能被其他并行thread再次访问的
         As[ty * BK + tx] = A[ty * K + tx];
         Bs[ty * BN + tx] = B[ty * N + tx];
-        // 同步所有线程缓存完成 
+        // 同步所有线程缓存完成
+        // 只有多线程访问共享内存才有这个sync需要，属于单线程编码、多线程执行、多线程共享内存才需要
         __syncthreads();
         A += BK;
         B += BK * N;
