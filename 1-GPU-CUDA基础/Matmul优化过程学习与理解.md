@@ -48,3 +48,30 @@
 - 寄存器缓存共享内存
 - 向量内存指令FLOAT4优化，结合寄存器缓存优化
 - 数据预取，双缓存通道，降低同步次数，将读和写分开，计算数据读取一块存储空间同时，可以同时向另一块内存写入下一轮依赖的数据，因此，只需要保证计算前待读取共享内存完成写入，即一次同步即可
+## matmul代码优化讲解和个人理解
+### 最基础代码结构
+```
+__global__ void sgemm_naive(int M, int N, int K, float alpha, const float *A,
+                            const float *B, float beta, float *C) {
+  // compute position in C that this thread is responsible for
+  // 这个x、y是对应到矩阵中的位置，也就是说一个thread最后只计算目标c的一个element, 因为这个thread
+  // 一个sm调度中落在同一个sm中的thread的id可能是并不是一个连续串
+  const uint x = blockIdx.x * blockDim.x + threadIdx.x;
+  const uint y = blockIdx.y * blockDim.y + threadIdx.y;
+
+  // `if` condition is necessary for when M or N aren't multiples of 32.
+  if (x < M && y < N) {
+    float tmp = 0.0;
+    for (int i = 0; i < K; ++i) {
+      tmp += A[x * K + i] * B[i * N + y];
+    }
+    // C = α*(A@B)+β*C
+    // 这里最终当前thread计算c中的一个element数据
+    C[x * N + y] = alpha * tmp + beta * C[x * N + y];
+  }
+}
+```
+### 全局内存加速-连续访问
+```
+
+```
