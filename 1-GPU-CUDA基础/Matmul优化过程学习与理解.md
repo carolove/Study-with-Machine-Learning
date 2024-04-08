@@ -51,26 +51,25 @@
 ## matmul代码优化讲解和个人理解
 ### 最基础代码结构
 ```
-__global__ void sgemm_naive(int M, int N, int K, float alpha, const float *A,
+__global__ void sgemm_naive(int Height, int Width, int K, float alpha, const float *A,
                             const float *B, float beta, float *C) {
   // compute position in C that this thread is responsible for
   // 这个x、y是对应到矩阵中的位置，也就是说一个thread最后只计算目标c的一个element, 因为这个thread
   // 一个sm调度中落在同一个sm中的thread的id可能是并不是一个连续串
   // 这里需要着重去看 nvidia cuda c++ guide 的share memory内容，https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html?highlight=matrix%20multiply#shared-memory
   // 这个文档说的非常清晰，特别是用row代替y，用col 代替x，用with代替 N 等等，比较清晰的显示出来代码的逻辑
-  const uint x = blockIdx.x * blockDim.x + threadIdx.x;
-  const uint y = blockIdx.y * blockDim.y + threadIdx.y;
+  
+    const uint row = blockIdx.y * blockDim.y + threadIdx.y;
+    const uint col = blockIdx.x * blockDim.x + threadIdx.x;
 
-  // `if` condition is necessary for when M or N aren't multiples of 32.
-  if (x < M && y < N) {
-    float tmp = 0.0;
-    for (int i = 0; i < K; ++i) {
-      tmp += A[x * K + i] * B[i * N + y];
-    }
-    // C = α*(A@B)+β*C
+    if (row < Height && col < Width) {
+        float tmp = 0.0;
+        for (uint i=0; i< K;i++) {
+            tmp+=A[row*K+i]*B[Width*i+col];
+        }
     // 这里最终当前thread计算c中的一个element数据
-    C[x * N + y] = alpha * tmp + beta * C[x * N + y];
-  }
+        C[row*Width+col] = alpha*tmp+beta*C[row*Width+col];
+    }
 }
 
 // create as many blocks as necessary to map all of C
