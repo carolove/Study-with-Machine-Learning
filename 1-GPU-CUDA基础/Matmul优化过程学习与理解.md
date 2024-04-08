@@ -85,17 +85,18 @@ sgemm_naive<<<gridDim, blockDim>>>(M, N, K, alpha, A, B, beta, C);
 ### 全局内存加速-连续访问
 ```
 // 这里的含义 blocksize其实和dim 是一个维度
-const int x = blockIdx.x * BLOCKSIZE + (threadIdx.x / BLOCKSIZE);
 // 这里y=row，如果不分block tilling的话，因为为 y=row= blockid.y * dimy + threadid.y(二维 thread)， 如果是一维的话，则直接为 blockid.y * dimy
-const int y = blockIdx.y * BLOCKSIZE + (threadIdx.x % BLOCKSIZE);
+// 精髓就在这里，因为threadDim定义是一个一维数组，因此threadid++的时候，也就是threadid.x ++的时候，会线性映射到同一个block中
+    const uint row = blockIdx.y * BLOCKSIZE + (threadIdx.x / BLOCKSIZE);
+    const uint col = blockIdx.x * BLOCKSIZE + (threadIdx.x % BLOCKSIZE);
 
-if (x < M && y < N) {
-  float tmp = 0.0;
-  for (int i = 0; i < K; ++i) {
-    tmp += A[x * K + i] * B[i * N + y];
-  }
-  C[x * N + y] = alpha * tmp + beta * C[x * N + y];
-}
+    if (row < Height && col < Width) {
+        float tmp = 0.0;
+        for (uint i =0;i< K;i++) {
+            tmp += A[row*K+i] * B[i*Width+col];
+        }
+        C[row*Width + col] = alpha * tmp + beta * C[row*Width+col];
+    }
 
 // gridDim stays the same
 dim3 gridDim(CEIL_DIV(M, 32), CEIL_DIV(N, 32));
