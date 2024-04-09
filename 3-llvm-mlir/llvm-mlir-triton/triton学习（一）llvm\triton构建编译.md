@@ -28,6 +28,13 @@ pip install ninja cmake wheel; # build-time dependencies
 ### 第二步 构建llvm
 - 打开triton项目选择合适的llvm，查看triton的readme， 2.2.x分支下，查看 《Building with a custom LLVM》 可以获知对应的llvm版本信息，eg：5e5a22ca
 - 按照章节说明，编译llvm
+```
+$ cd $HOME/llvm-project  # your clone of LLVM.
+$ mkdir build
+$ cd build
+$ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON  ../llvm -DLLVM_ENABLE_PROJECTS="mlir;llvm" -DLLVM_TARGETS_TO_BUILD="Native;NVPTX;AMDGPU" -DLLVM_BUILD_EXAMPLES=ON
+$ ninja
+```
 - 在$HOME/.triton/llvm下面建立一个对应的llvm软连接，eg: ln -s ${HOME}/{your_llvm_work_folder}/llvm-project/build llvm-5e5a22ca-ubuntu-x64
 ### 第三步 下载对应的pybind11
 - 查看triton项目的python/setup.py文件，找到对应的pybind11信息，下载对应的版本并放到${HOME}/.triton/pybind11目录下
