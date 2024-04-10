@@ -10,3 +10,4 @@
 ## 第二篇，bazel测试
 - 主要讲述在llvm mlir的测试框架，使用lit以及filecheck等语法，综合bazel的测试框架，来完成整个测试过程，将测试mlir语法和lowering结构写在一个测试文件中，调用lit filecheck来验证 完成单元测试
 - 同时也验证了lowering的一些细节，mlir lowering到llvm ir的一些测试case
+- 构建成功，跑通了case，对应的commit需要到pr 8才可以通过，主要是一些路径本身是不存在的不需要添加
