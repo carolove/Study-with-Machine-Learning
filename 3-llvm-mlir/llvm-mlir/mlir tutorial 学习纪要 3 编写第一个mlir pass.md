@@ -37,5 +37,6 @@ lib
 - 为了实现上述目标，最通用的实现是直接通过 C++ API 实现，同时也可以用pattern rewrite engine、the dialect conversion framework、or tablegen 技术来实现同一个目标
 - pattern rewrite engine、the dialect conversion framework、or tablegen等技术在后继文章中展示，展示如何用这些技术和框架来构建一个可用的全新pass
 ## 整个系统的个模块代码的讲解
+- 有一个在本地bazelbuild有一个需要注意的事，在我本地build的时候，第一、要使用bazelisk，在本地使用.bazelversion，第二、bazel本地构建出现一些特别异常的错误，比如gcc ar什么连接错误之类的，有可能是bazel本地cache出了问题，删除bazel cache，纯净构建
 - 本章节写的第一个pass：实现一个循环展开
 - 
