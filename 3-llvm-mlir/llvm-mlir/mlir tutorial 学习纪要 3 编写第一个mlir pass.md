@@ -37,3 +37,5 @@ lib
 - 为了实现上述目标，最通用的实现是直接通过 C++ API 实现，同时也可以用pattern rewrite engine、the dialect conversion framework、or tablegen 技术来实现同一个目标
 - pattern rewrite engine、the dialect conversion framework、or tablegen等技术在后继文章中展示，展示如何用这些技术和框架来构建一个可用的全新pass
 ## 整个系统的个模块代码的讲解
+- 本章节写的第一个pass：实现一个循环展开
+- 
