@@ -39,7 +39,26 @@ lib
 ## 整个系统的个模块代码的讲解
 - 有一个在本地bazelbuild有一个需要注意的事，在我本地build的时候，第一、要使用bazelisk，在本地使用.bazelversion，第二、bazel本地构建出现一些特别异常的错误，比如gcc ar什么连接错误之类的，有可能是bazel本地cache出了问题，删除bazel cache，纯净构建
 - 
-- 本章节写的第一个pass：实现一个循环展开
+- .bazelversion 的引入，可以用bazelisk使用规定版本的bazel ，本文定义的是 bazel 6.4.0
+- bazel中构建对象目录和bazel BUILD文件定义的关系
+```
+cc_binary(  这是bazel系统调用函数，用于生成一个目标二进制
+    name = "learning-opt", 
+    srcs = ["learning-opt.cpp"],
+    includes = ["include"],
+    deps = [
+        "//lib/Transform/Affine:AffineFullUnroll",  这个是本地工程以WORKSPACE为基准的相对路径引用，//lib/Transform/Affine:AffineFullUnroll，其中//lib/Transform/Affine是的是本地相对目录，: 表示为这个目录下的BUILD构建体，AffineFullUnroll即对应BUILD的cc_library定义
+        "//lib/Transform/Arith:MulToAdd",
+        "@llvm-project//mlir:AllPassesAndDialects", 这个是系统引用路径
+        "@llvm-project//mlir:MlirOptLib",
+        "@llvm-project//mlir:Pass",
+    ],
+)
+
+# bazelisk run tools:learning-opt 这个也是使用的相对路径，因为在这个项目中WORKSPACE 下，tests相对目录执行BUILD构建体名为learning-opt的cc_binary，代表着系统的相对路径的根，就是WORKSPACE文件
+
+
+```
 - 
 ## issues
 - bazel cache的问题，删掉baze cache重新 纯净构建就好了
