@@ -45,6 +45,8 @@ lib
 - bazel cache的问题，删掉baze cache重新 纯净构建就好了
 - llvm project 依赖的commit版本信息，这个mlir tutorial 的add passed这个章节依赖的commit为cd5fcea6d4c70a7328ca9538c9098d9f5af69682，但是我希望这这次学习的mlir 是为了给triton学习打下基础，我希望学习的triton 是release 2.2.x，以来的llvm commitid 为5e5a22caf88ac1ccfa8dc5720295fdeba0ad9372，发现我如果用 5e5a22caf88ac1ccfa8dc5720295fdeba0ad9372来构建这个章节居然不通过
 ```
-# 具体的原因使用 在5e5a22caf88ac1ccfa8dc5720295fdeba0ad9372这个commit中rewriter的replaceOp 出现了了问题，ambiguous，需要深究为什么会这样
+# 具体的原因使用 在5e5a22caf88ac1ccfa8dc5720295fdeba0ad9372这个commit中rewriter的replaceOp 出现了了问题，ambiguous，
+# 后来看源代码发现原来 mlir/include/mlir/IR/PatternMatch.h这个RewriterBase的定义中有两个 virtual void replaceOp( 函数定义，其参数类型不一致，在使用这个函数调用的时候，需要将参数做显性参数传入，我是强转为了(mlir::ValueRange){newAdd}，但是我强转为(mlir::Operation *)似乎是一样的。。。
+# 查看源代码，这两个声明的具体实现，我看其实干的内容是一样的，不知道为什么要加入这么一个冗余的同名函数
 ```
 - 
