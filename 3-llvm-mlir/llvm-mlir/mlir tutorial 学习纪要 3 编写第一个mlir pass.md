@@ -59,7 +59,8 @@ cc_binary(  这是bazel系统调用函数，用于生成一个目标二进制
 
 
 ```
-- 
+- 本地实现了三个pass，然后在main函数中做了dialect以及passes的注册
+- 三个pass的实现都是用的PassWrapper，就是一个轻门面封装模式，其中需要需要实现runOnOperation、getArgument、getDescription三个函数
 ## issues
 - bazel cache的问题，删掉baze cache重新 纯净构建就好了
 - llvm project 依赖的commit版本信息，这个mlir tutorial 的add passed这个章节依赖的commit为cd5fcea6d4c70a7328ca9538c9098d9f5af69682，但是我希望这这次学习的mlir 是为了给triton学习打下基础，我希望学习的triton 是release 2.2.x，以来的llvm commitid 为5e5a22caf88ac1ccfa8dc5720295fdeba0ad9372，发现我如果用 5e5a22caf88ac1ccfa8dc5720295fdeba0ad9372来构建这个章节居然不通过
