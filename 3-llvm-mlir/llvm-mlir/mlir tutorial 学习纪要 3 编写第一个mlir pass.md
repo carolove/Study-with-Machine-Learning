@@ -61,6 +61,7 @@ cc_binary(  这是bazel系统调用函数，用于生成一个目标二进制
 - 三个pass的实现都是用的PassWrapper，就是一个轻门面封装模式，其中需要需要实现runOnOperation、getArgument、getDescription三个函数
 - 最重要的实现一个pass的函数是，要实现OpRewritePattern的实现子类，在这次演示中，AffineFullUnrollPassAsPatternRewrite的OpRewritePattern子类实现方法matchAndRewrite什么都没做只是做了一个包装，向下传递
 - 而MulToAddPass的两个重写操作，PowerOfTwoExpand、PeelFromMul实现的重写子类实现函数 matchAndRewrite，都分别做了对应代码的匹配和规则重写，分别实现了乘法拆解为加法，以及一个9的倍数拆解为*8+1
+- 如果要自定义pass，特别是重写pass的话，最重要的就是实现matchAndRewrite
 ## issues
 - bazel cache的问题，删掉baze cache重新 纯净构建就好了
 - llvm project 依赖的commit版本信息，这个mlir tutorial 的add passed这个章节依赖的commit为cd5fcea6d4c70a7328ca9538c9098d9f5af69682，但是我希望这这次学习的mlir 是为了给triton学习打下基础，我希望学习的triton 是release 2.2.x，以来的llvm commitid 为5e5a22caf88ac1ccfa8dc5720295fdeba0ad9372，发现我如果用 5e5a22caf88ac1ccfa8dc5720295fdeba0ad9372来构建这个章节居然不通过
