@@ -17,7 +17,8 @@
 - 这节作者打算用tblgen工具重新生成第三章所开发的AffineFullUnroll pass
 - 这个commit，[add tablegen for loop unrolling passes](https://github.com/j2kun/mlir-tutorial/pull/7/commits/d5f5a0d9cc909351076fba97b38708215cd83585)，说明了如何增加一个tblgen生成的pass，有这么几个代码细节需要说明
 ```
-
+第一、在对应的构件目录下，加载gentbl_cc_library函数
+第二、设计td文件，这个文件只是定位了pass的描述，并没有实际核心代码 matchAndRewrite的生成相关
 ```
 - 
 
