@@ -9,3 +9,8 @@
   let results = (outs Polynomial:$output);
   let assemblyFormat = "$lhs `,` $rhs attr-dict `:` `(` type($lhs) `,` type($rhs) `)` `->` type($output)"; 每一个都不容易理解，有点像天书
 ```
+- 我llvm-project项目使用5e5a22caf88ac1ccfa8dc5720295fdeba0ad9372替代原始的cd5fcea6d4c70a7328ca9538c9098d9f5af69682，发现mlir的构建就出现了问题，错误码如下
+```
+lib/Dialect/Poly/PolyOps.td:8:37: error: Couldn't find class 'Op'
+需要研究为什么会这样
+```
