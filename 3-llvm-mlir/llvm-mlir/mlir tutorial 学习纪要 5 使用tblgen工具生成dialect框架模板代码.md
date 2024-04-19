@@ -29,7 +29,9 @@ let assemblyFormat = [{
 ```
 - let parameters = (ins "int":$degreeBound);的理解
 ```
-这个其实就是定义了入参，ins代表着inputs，"int"代表着 integer类型，$degreeBound代表着参数名
+第一、这个其实就是定义了入参，ins代表着inputs，并且，outs代表这outputs，"int"代表着 integer类型，加了$的比如$degreeBound，代表着变量
+第二、类似的parser和printer，和assemblyFormat比较类似，分别定义了源码解析、输出IR打印，以及输出格式
+第三、builders是指明了构造器，使用类似命令，mlir-tblgen -gen-op-defs ${mlir_src_root}/examples/toy/Ch2/include/toy/Ops.td -I ${mlir_src_root}/include/，可以看到cPP的构造函数builder的生成结果
 ```
 - 
 ## issues
