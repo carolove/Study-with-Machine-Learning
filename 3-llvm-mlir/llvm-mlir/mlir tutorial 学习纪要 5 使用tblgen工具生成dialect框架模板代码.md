@@ -31,7 +31,7 @@ let assemblyFormat = [{
 ```
 第一、这个其实就是定义了入参，ins代表着inputs，并且，outs代表这outputs，"int"代表着 integer类型，加了$的比如$degreeBound，代表着变量
 第二、类似的parser和printer，和assemblyFormat比较类似，分别定义了源码解析、输出IR打印，以及输出格式
-第三、builders是指明了构造器，使用类似命令，mlir-tblgen -gen-op-defs ${mlir_src_root}/examples/toy/Ch2/include/toy/Ops.td -I ${mlir_src_root}/include/，可以看到cPP的构造函数builder的生成结果
+第三、builders是指明了构造器，使用类似命令，./bazel-bin/external/llvm-project/mlir/mlir-tblgen  -gen-op-defs  lib/Dialect/Poly/PolyOps.td -I  $HOME/.cache/bazel/_bazel_username/3ded02ab66b04db8f75d57ddcaa008b1/external/llvm-raw/mlir/include -I lib/Dialect/Poly/ > ops.h，可以看到cPP的构造函数builder的生成结果
 ```
 - 
 ## issues
