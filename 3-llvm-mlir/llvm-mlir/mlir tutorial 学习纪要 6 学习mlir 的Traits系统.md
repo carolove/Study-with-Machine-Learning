@@ -11,8 +11,8 @@
 ```
 比如Ch4里演示的内置的DialectInlinerinterface和ShapeInferenceOpInterface，而且也有基于TableGen的设计方法！
 
-struct ToyInlinerInterface : public DialectInlinerInterface { 这是tblgen 语法中implement DialectInlinerInterface的方式
-  using DialectInlinerInterface::DialectInlinerInterface; 具体的话就是内联 DialectInlinerInterface 让ToyInlinerInterface具有DialectInlinerInterface的多有复用逻辑
+struct ToyInlinerInterface : public DialectInlinerInterface { 这是tblgen 语法中继承 DialectInlinerInterface的方式
+  using DialectInlinerInterface::DialectInlinerInterface; 具体的话就是声明使用 DialectInlinerInterface ，让ToyInlinerInterface具有DialectInlinerInterface的多有复用逻辑
   //...
 };
 ```
