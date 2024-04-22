@@ -35,3 +35,10 @@ func.func @test_arith_sccp() -> i32 {
 
 ## issues
 - 遇到一个问题，在ops中对于add sub两个op，发现fold实现报错，应该是最新的代码依赖有问题
+```
+通过修改依赖关系，解决了这个问题，
+BUILD中引入， "@llvm-project//mlir:UBDialect",
+其次，在对应的cpp代码中引入，#include "mlir/Dialect/UB/IR/UBOps.h"
+这样就可以加入对于依赖，完成构建
+```
+- 
