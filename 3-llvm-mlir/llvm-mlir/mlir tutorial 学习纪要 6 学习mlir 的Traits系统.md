@@ -18,7 +18,7 @@ traits是mlir提供的基础设施，用于复用代码，traits是一些最无�
 ```
 - 其次也没有搞懂新增的mlir测试案例的作用
 ```
-这些测试案例，就是用来说明我们自己定义的ODS对象，比如pony dialect已经可以使用mlir定义通用passes设施了，比如control-flow-sink 控制流展开下沉 将loop中的执行顺序调整、cse 无用表达式消除、inline remove-dead-values等等
+这些测试案例，就是用来说明我们自己定义的ODS对象，比如pony dialect已经可以使用mlir定义通用passes设施了，比如loop-invariant-code-motion 、control-flow-sink 控制流展开下沉 将loop中的执行顺序调整、cse 无用表达式消除、inline remove-dead-values等等
 ```
 
 ## 什么是traits和interfaces
