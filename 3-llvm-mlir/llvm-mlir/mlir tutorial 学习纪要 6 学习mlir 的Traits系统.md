@@ -1,3 +1,4 @@
+
 # mlir tutorial 学习纪要 6 学习mlir 的Traits系统
 - 搞清楚什么是mlir的traits系统
 - @llvm-project//mlir:SideEffectInterfacesTdFiles 这个里面的SideEffectInterfaces怎么解释和翻译
@@ -20,3 +21,4 @@ struct ToyInlinerInterface : public DialectInlinerInterface { 这是tblgen 语�
 -  a trait is an interface with no methods. Traits can just be “slapped on” an operation and passes can magically start working with them. They can also serve as mixins for common op verification routines, type inference, and more.
 -  怎么理解呢，就是说traits他不需要实现，只需要贴在对应的types、operations上，就可以正常使用
 -  \[Pure\] traits 是 NoMemoryEffect 内存无关性？ 和 AlwaysSpeculatable 可预测性的. 这样这个pure trait是可以轻易的加到operation上的
+-  总而言之，这个章节就是告诉我们如何用mlir已经开发好的设施，用traits这个方案方式，将mlir现有基础设施附加在我们自己开发的dialect operation types上，因此在核心代码的改动中，只需要registerAllPasses以及在td的声明式定义中加入对应的traits，就可以将对应traits粘合到我们自己的对象上
