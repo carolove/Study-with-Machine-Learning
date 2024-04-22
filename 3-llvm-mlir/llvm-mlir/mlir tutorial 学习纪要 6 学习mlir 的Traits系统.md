@@ -19,3 +19,4 @@ struct ToyInlinerInterface : public DialectInlinerInterface { 这是tblgen 语�
 - you can implement interfaces on operations and types
 -  a trait is an interface with no methods. Traits can just be “slapped on” an operation and passes can magically start working with them. They can also serve as mixins for common op verification routines, type inference, and more.
 -  怎么理解呢，就是说traits他不需要实现，只需要贴在对应的types、operations上，就可以正常使用
+-  \[Pure\] traits 是 NoMemoryEffect 内存无关性？ 和 AlwaysSpeculatable 可预测性的. 这样这个pure trait是可以轻易的加到operation上的
