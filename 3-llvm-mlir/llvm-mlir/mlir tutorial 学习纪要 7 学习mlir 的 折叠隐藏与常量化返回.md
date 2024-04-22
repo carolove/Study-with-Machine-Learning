@@ -34,7 +34,7 @@ func.func @test_arith_sccp() -> i32 {
 - 要做到常量展开，需要用到一些多项式展开的操作，就是说把Mlir IR中的一部分常量计算，通过展开的方式，实现计算简化优化
 
 ## issues
-- 遇到一个问题，在ops中对于add sub两个op，发现fold实现报错，应该是最新的代码依赖有问题
+- 遇到一个问题，在ops中对于add sub两个op，发现fold实现报错，应该是最新的代码依赖有问题，主要错误提示为，error: static assertion failed: PoisonAttr is undefined, either add a dependency on UB dialect or pass void as
 ```
 通过修改依赖关系，解决了这个问题，
 BUILD中引入， "@llvm-project//mlir:UBDialect",
