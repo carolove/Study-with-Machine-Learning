@@ -32,5 +32,17 @@ def DifferenceOfSquares : Pattern<
 ## ISSUES
 - 定义的def LiftConjThroughEval : Pat<(Poly_EvalOp $f, (ConjOp $z)),(ConjOp (Poly_EvalOp $f, $z))>，在构建的时候提示Complex.conj 匹配一个参数但是定义了两个参数，不知道如何解决
 ```
+这个问题最后，在后继的更新中解决了
+主要是在
+def LiftConjThroughEval : Pat<
+  (Poly_EvalOp $f, (ConjOp $z)),
+  (ConjOp (Poly_EvalOp $f, $z))
+>;
+改造为
+def LiftConjThroughEval : Pat<
+  (Poly_EvalOp $f, (ConjOp $z, $fastmath)),
+  (ConjOp (Poly_EvalOp $f, $z), $fastmath)
+>;
+应该是这个conj需要加入第二个入参
 ```
 - 
