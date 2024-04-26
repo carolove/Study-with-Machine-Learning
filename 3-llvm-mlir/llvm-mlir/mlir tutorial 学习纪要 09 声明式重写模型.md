@@ -7,6 +7,11 @@
 #### 通过ODS声明，c++实现的方式实现 重写模型
 #### 完全用ODS来声明以及实现 重写模型
 - 着重研究这个逻辑
+```
+1、先定义pattern匹配核心ODS
+2、在对应的ODS Op上开启  let hasCanonicalizer = 1; 意味着可以附加 match and rewriter
+3、在对于的ODS Op上的实现上加上getCanonicalizationPatterns 实现， results.add<DifferenceOfSquares>(context);意味着可以在ir结果上做 重写
+```
 - 代码结构
 ```
 // 在重写匹配模型td文件中
