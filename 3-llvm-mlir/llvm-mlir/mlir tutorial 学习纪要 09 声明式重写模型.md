@@ -54,7 +54,7 @@ operation ::= `complex.conj` $complex (`fastmath` `` $fastmath^)? attr-dict `:` 
 2、Example:
 %a = complex.conj %b: complex<f32>
 3、
+Attribute	    MLIR Type	                          Description 
+fastmath	      ::mlir::arith::FastMathFlagsAttr 	Floating point fast math flags
 ```
-|Attribute	|    MLIR Type	                   |   Description |
-|fastmath	    |  ::mlir::arith::FastMathFlagsAttr| 	Floating point fast math flags|
 - 
