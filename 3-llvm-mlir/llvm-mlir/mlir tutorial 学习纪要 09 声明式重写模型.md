@@ -51,10 +51,22 @@ def LiftConjThroughEval : Pat<
 complex.conj (complex::ConjOp)
 1、Syntax:
 operation ::= `complex.conj` $complex (`fastmath` `` $fastmath^)? attr-dict `:` type($complex)
+operation 操作结果，因为SameOperandsAndResultType traits 应此result和operand 类型推导一致
+`complex.conj` ： `` 这个；括起来的内容为 语法关键字
+$complex : $ 代表着为；变量名，即operand 变量名
+(`fastmath` `` $fastmath^)?  这个是属性定义，`fastmath`代表着快速数学计算，默认为不使能
+attr-dict  属性字典
+`:`  语法关键符，代表类型定义符SameOperandsAndResultType traits ，result可以类型推导
+ type($complex) operand属性，因为
 2、Example:
-%a = complex.conj %b: complex<f32>
+%a = complex.conj %b: complex<f32>， ，默认不开启fastmath计算？？？
 3、
 Attribute	    MLIR Type	                          Description 
-fastmath	      ::mlir::arith::FastMathFlagsAttr 	Floating point fast math flags
+fastmath	      ::mlir::arith::FastMathFlagsAttr 	Floating point fast math flags  浮点快速数学计算
+4、
+Traits: AlwaysSpeculatableImplTrait, Elementwise, SameOperandsAndResultType
+Interfaces: ArithFastMathInterface, ConditionallySpeculatable, InferTypeOpInterface, NoMemoryEffect (MemoryEffectOpInterface)
+Effects: MemoryEffects::Effect{}
+这写traits interfaces effects查阅docs即可
 ```
 - 
