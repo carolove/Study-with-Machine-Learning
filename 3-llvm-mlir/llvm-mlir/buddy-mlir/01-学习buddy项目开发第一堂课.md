@@ -3,4 +3,7 @@
 - 这几个commit开发了一个conversion mlir流程，这个跟mlir tutorial的 《mlir tutorial 学习纪要 03 编写第一个mlir pass》是很类似的，基本上就是手写mlir pass
 - 这堂课主要是开发一个手写conversion pass流程
 
-## 
+## 最新的match and rewrite 用CB-SM 策略实现  coefficients broadcasting 算法 应用于conv-2D算子
+- 具体流程
+```
+```
