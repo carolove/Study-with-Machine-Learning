@@ -3,7 +3,7 @@
 - 这几个commit开发了一个conversion mlir流程，这个跟mlir tutorial的 《mlir tutorial 学习纪要 03 编写第一个mlir pass》是很类似的，基本上就是手写mlir pass
 - 这堂课主要是开发一个手写conversion pass流程
 
-## 最新的match and rewrite 用 strip mining strategy (CB-SM) 策略实现  coefficients broadcasting 算法 应用于conv-2D算子
+## 用 strip mining strategy (CB-SM) 策略实现  coefficients broadcasting 算法 应用于conv-2D算子
 - 读懂strip mining strategy (CB-SM)技术在高性能计算的应用
 - strip mining strategy (CB-SM) 数据带状分解 循环展开策略，是指将大的串行循环，展开为多个小循环，循环展开/数据带状分解的宽度 的标准依据即处理器可并行的数据规模/可寄存器缓存的数据规模
 ```
