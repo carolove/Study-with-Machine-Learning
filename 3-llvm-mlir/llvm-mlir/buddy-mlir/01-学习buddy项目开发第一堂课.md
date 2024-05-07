@@ -164,10 +164,10 @@ affine.vector_load：从缓冲区切片中返回一个向量 （MLIR MemRef格�
 affine.vector_store：将一个向量写到缓存区切片中（MLIR MemRef格式）。
 vector.broadcast：将标量或向量值广播为 N-维 结果向量。
 vector.fma：向量化类型的乘加混合指令。
-
+```
  CB 算法的过程如下图所示
 ![image](https://github.com/carolove/Study-with-Machine-Learning/assets/834467/6dd7dbb7-4095-42a6-aad5-4ce2641ae01e)
-
+```
 注意输入是一个通道数为 1 的图片或者特征图，然后 kernel 的通道数也是1。算法的执行流程大概为：
 
 首先将 kernel 的每个元素使用 vector_load 加载到缓冲区中 并使用 vector.broadcast 广播到 vector1 中。
