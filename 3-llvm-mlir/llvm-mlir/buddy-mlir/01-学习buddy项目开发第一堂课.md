@@ -29,18 +29,18 @@ LogicalResult
     auto loc = op->getLoc();   // 这一行代表loc为 linalg.conv_2d 即linalg dialect下的conv_2d op
     auto ctx = op->getContext();
     // Create constant index.
-    Value c0 = rewriter.create<ConstantIndexOp>(loc, 0);  // %c0 = arith.constant 0 : index
-    Value c1 = rewriter.create<ConstantIndexOp>(loc, 1);  // %c1 = constant 1 : index
+    Value c0 = rewriter.create<ConstantIndexOp>(loc, 0);  // %c0 = arith.constant 0 : index  -> 这是说维度 0
+    Value c1 = rewriter.create<ConstantIndexOp>(loc, 1);  // %c1 = constant 1 : index        -> 维度1
     // Get input, kernel and output. linalg.conv_2d ins (%arg0, %arg1: memref<?x?xf32>, memref<?x?xf32>) outs (%arg2: memref<?x?xf32>)
     // _mlir_ciface_conv_2d(input, kernel, output);
     Value input = op->getOperand(0); 
     Value kernel = op->getOperand(1);
     Value output = op->getOperand(2);
     // Create DimOp.
-    Value kernelRow = rewriter.create<memref::DimOp>(loc, kernel, c0); // %0 = memref.dim %arg1, %c0 : memref<?x?xf32>
-    Value kernelCol = rewriter.create<memref::DimOp>(loc, kernel, c1); // %1 = memref.dim %arg1, %c1 : memref<?x?xf32>
-    Value outputRow = rewriter.create<memref::DimOp>(loc, output, c0); // %2 = memref.dim %arg2, %c0 : memref<?x?xf32>
-    Value outputCol = rewriter.create<memref::DimOp>(loc, output, c1); // %3 = memref.dim %arg2, %c1 : memref<?x?xf32>
+    Value kernelRow = rewriter.create<memref::DimOp>(loc, kernel, c0); // %0 = memref.dim %arg1, %c0 : memref<?x?xf32>  -> 将kernel 也就是第二个如参 求 0/x 维的宽度
+    Value kernelCol = rewriter.create<memref::DimOp>(loc, kernel, c1); // %1 = memref.dim %arg1, %c1 : memref<?x?xf32>  -> 将kernel 也就是第二个如参 求 1/y 维的宽度
+    Value outputRow = rewriter.create<memref::DimOp>(loc, output, c0); // %2 = memref.dim %arg2, %c0 : memref<?x?xf32>  -> 将output 也就是第三个如参 求 0/x 维的宽度
+    Value outputCol = rewriter.create<memref::DimOp>(loc, output, c1); // %3 = memref.dim %arg2, %c1 : memref<?x?xf32>  -> 将output 也就是第三个如参 求 1/y 维的宽度
     // Size of strip mining.
     AffineExpr d0;
     bindDims(ctx, d0);
@@ -52,47 +52,31 @@ LogicalResult
         rewriter, loc, lowerBounds, uperBounds, steps,
         [&](OpBuilder &builder, Location loc, ValueRange ivs) {
           // Create strip mining loop.
-          builder.create<AffineForOp>(
-              loc, ValueRange{c0}, builder.getDimIdentityMap(),
-              ValueRange{outputCol}, stripMap, /*Step=*/1, llvm::None,
-              [&](OpBuilder &nestedBuilder, Location nestedLoc, Value iv,
-                  ValueRange itrArgs) {
+          builder.create<AffineForOp>(loc, ValueRange{c0}, builder.getDimIdentityMap(),ValueRange{outputCol}, stripMap, /*Step=*/1, llvm::None, [&](OpBuilder &nestedBuilder, Location nestedLoc, Value iv,ValueRange itrArgs) {
                 // Vectorize the kernel.
                 // Define `*Type`.
                 FloatType f32 = mlir::FloatType::getF32(ctx);
                 VectorType vectorTy1 = mlir::VectorType::get({1}, f32);
                 VectorType vectorTy32 = mlir::VectorType::get({stride}, f32);
                 // Broadcast element of the kernel.
-                Value kernelValue = builder.create<AffineVectorLoadOp>(
-                    loc, vectorTy1, kernel, ValueRange{ivs[1], ivs[2]});
-                Value kernelVector =
-                    builder.create<BroadcastOp>(loc, vectorTy32, kernelValue);
+                Value kernelValue = builder.create<AffineVectorLoadOp>(loc, vectorTy1, kernel, ValueRange{ivs[1], ivs[2]});                                  // %4 = affine.vector_load %arg1[%arg4, %arg5] : memref<?x?xf32>, vector<1xf32>
+                Value kernelVector = builder.create<BroadcastOp>(loc, vectorTy32, kernelValue);                                                              // %5 = vector.broadcast %4 : vector<1xf32> to vector<256xf32>
                 // Load input vector from memref.
                 AffineExpr m, n, k, j;
                 bindDims(ctx, m, n, k, j);
-                AffineMap inputVectorMap = AffineMap::get(
-                    /*dimCount=*/4, /*symbolCount=*/0, {m + n, k + j * stride},
-                    ctx);
-                Value inputVector = nestedBuilder.create<AffineVectorLoadOp>(
-                    loc, vectorTy32, input, inputVectorMap,
-                    ValueRange{ivs[0], ivs[1], ivs[2], iv});
+                AffineMap inputVectorMap = AffineMap::get(/*dimCount=*/4, /*symbolCount=*/0, {m + n, k + j * stride},ctx);
+                Value inputVector = nestedBuilder.create<AffineVectorLoadOp>(loc, vectorTy32, input, inputVectorMap,ValueRange{ivs[0], ivs[1], ivs[2], iv}); // %6 = affine.vector_load %arg0[%arg3 + %arg4, %arg5 + %arg6 * 256] : memref<?x?xf32>, vector<256xf32>
                 // Define AffineMap.
                 // The `outputVector` and `resultVector` share the same
                 // AffineMap.
                 AffineExpr x, y;
                 bindDims(ctx, x, y);
-                AffineMap outputVectorMap = AffineMap::get(
-                    /*dimCount=*/2, /*symbolCount=*/0, {x, y * stride}, ctx);
-                Value outputVector = nestedBuilder.create<AffineVectorLoadOp>(
-                    loc, vectorTy32, output, outputVectorMap,
-                    ValueRange{ivs[0], iv});
+                AffineMap outputVectorMap = AffineMap::get( /*dimCount=*/ 2, /*symbolCount=*/ 0, {x, y * stride}, ctx);
+                Value outputVector = nestedBuilder.create<AffineVectorLoadOp>(loc, vectorTy32, output, outputVectorMap,ValueRange{ivs[0], iv});              // %7 = affine.vector_load %arg2[%arg3, %arg6 * 256] : memref<?x?xf32>, vector<256xf32>
                 // FMA = Fused Multiply + Add
-                Value resultVector = nestedBuilder.create<FMAOp>(
-                    loc, inputVector, kernelVector, outputVector);
-                nestedBuilder.create<AffineVectorStoreOp>(
-                    loc, resultVector, output, outputVectorMap,
-                    ValueRange{ivs[0], iv});
-                nestedBuilder.create<AffineYieldOp>(nestedLoc);
+                Value resultVector = nestedBuilder.create<FMAOp>(loc, inputVector, kernelVector, outputVector);                                              // %8 = vector.fma %6, %5, %7 : vector<256xf32>
+                nestedBuilder.create<AffineVectorStoreOp>(loc, resultVector, output, outputVectorMap,ValueRange{ivs[0], iv});                                // affine.vector_store %8, %arg2[%arg3, %arg6 * 256] : memref<?x?xf32>, vector<256xf32>
+                nestedBuilder.create<AffineYieldOp>(nestedLoc                                                                                                // return
               });
         });
     // Remove the origin convolution operation.
