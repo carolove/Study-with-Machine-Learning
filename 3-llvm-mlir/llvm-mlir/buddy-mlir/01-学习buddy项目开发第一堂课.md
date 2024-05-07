@@ -26,7 +26,7 @@ https://github.com/buddy-compiler/buddy-mlir/commits/main/?after=ee5c0ede479f69e
 LogicalResult
   matchAndRewrite(Operation *op, ArrayRef<Value> operands,
                   ConversionPatternRewriter &rewriter) const override {
-    auto loc = op->getLoc();
+    auto loc = op->getLoc(); 
     auto ctx = op->getContext();
     // Create constant index.
     Value c0 = rewriter.create<ConstantIndexOp>(loc, 0);
@@ -99,5 +99,81 @@ LogicalResult
     return success();
   }
 
-代码理解，
+原始的mlir
+func.func @conv_2d(%arg0: memref<?x?xf32>, %arg1: memref<?x?xf32>, %arg2: memref<?x?xf32>) {
+  linalg.conv_2d ins (%arg0, %arg1: memref<?x?xf32>, memref<?x?xf32>)
+                 outs (%arg2: memref<?x?xf32>)
+  return
+}
+
+conversion后的mlir
+#map0 = affine_map<(d0) -> (d0)>
+#map1 = affine_map<(d0) -> (d0 ceildiv 256)>
+module {
+  func.func @conv_2d(%arg0: memref<?x?xf32>, %arg1: memref<?x?xf32>, %arg2: memref<?x?xf32>) {
+    %c0 = arith.constant 0 : index
+    %c1 = arith.constant 1 : index
+    %c256 = arith.constant 256 : index
+    %cst = arith.constant 0.000000e+00 : f32
+    %0 = vector.splat %cst : vector<256xf32>
+    %1 = memref.dim %arg1, %c0 : memref<?x?xf32>
+    %2 = memref.dim %arg1, %c1 : memref<?x?xf32>
+    %3 = memref.dim %arg2, %c0 : memref<?x?xf32>
+    %4 = memref.dim %arg2, %c1 : memref<?x?xf32>
+    affine.for %arg3 = #map0(%c0) to #map0(%3) {
+      affine.for %arg4 = #map0(%c0) to #map0(%1) {
+        affine.for %arg5 = #map0(%c0) to #map0(%2) {
+          affine.for %arg6 = #map0(%c0) to #map1(%4) {
+            // 对应下面的步骤1
+            %5 = affine.vector_load %arg1[%arg4, %arg5] : memref<?x?xf32>, vector<1xf32>
+            %6 = vector.broadcast %5 : vector<1xf32> to vector<256xf32>
+            %7 = arith.muli %arg6, %c256 : index
+            %8 = arith.subi %4, %7 : index
+            %9 = arith.cmpi sge, %8, %c256 : index
+            scf.if %9 {
+              // 对应下面的步骤二
+              %10 = affine.vector_load %arg0[%arg3 + %arg4, %arg5 + %arg6 * 256] : memref<?x?xf32>, vector<256xf32>
+              // 对应下面的步骤三
+              %11 = affine.vector_load %arg2[%arg3, %arg6 * 256] : memref<?x?xf32>, vector<256xf32>
+              // 对应下面的步骤四
+              %12 = vector.fma %10, %6, %11 : vector<256xf32>
+              // 对应下面的步骤五
+              affine.vector_store %12, %arg2[%arg3, %arg6 * 256] : memref<?x?xf32>, vector<256xf32>
+            } else {
+              %10 = vector.create_mask %8 : vector<256xi1>
+              %11 = arith.addi %arg3, %arg4 : index
+              %12 = arith.muli %arg6, %c256 : index
+              %13 = arith.addi %arg5, %12 : index
+              %14 = vector.maskedload %arg0[%11, %13], %10, %0 : memref<?x?xf32>, vector<256xi1>, vector<256xf32> into vector<256xf32>
+              %15 = vector.maskedload %arg2[%arg3, %12], %10, %0 : memref<?x?xf32>, vector<256xi1>, vector<256xf32> into vector<256xf32>
+              %16 = vector.fma %14, %6, %15 : vector<256xf32>
+              vector.maskedstore %arg2[%arg3, %12], %10, %16 : memref<?x?xf32>, vector<256xi1>, vector<256xf32>
+            }
+          }
+        }
+      }
+    }
+    return
+  }
+}
+
+实现这个算法涉及到的 MLIR Dialect 以及 Op 这里列一下：
+
+affine.for ：执行指定次数循环体的操作。
+affine.vector_load：从缓冲区切片中返回一个向量 （MLIR MemRef格式）。
+affine.vector_store：将一个向量写到缓存区切片中（MLIR MemRef格式）。
+vector.broadcast：将标量或向量值广播为 N-维 结果向量。
+vector.fma：向量化类型的乘加混合指令。
+
+ CB 算法的过程如下图所示
+![image](https://github.com/carolove/Study-with-Machine-Learning/assets/834467/6dd7dbb7-4095-42a6-aad5-4ce2641ae01e)
+
+注意输入是一个通道数为 1 的图片或者特征图，然后 kernel 的通道数也是1。算法的执行流程大概为：
+
+首先将 kernel 的每个元素使用 vector_load 加载到缓冲区中 并使用 vector.broadcast 广播到 vector1 中。
+然后将特征图的元素使用 vector_load 加载到 vector2 中。
+第三步将输出特征图的元素使用 vector_load 加载到 vector3 中。
+然后使用 vector.fma 将 vector1 和 vector2 相乘并加到 vector3 上。
+最后使用 vector_store 将上述结果写回缓冲区中。
+
 ```
