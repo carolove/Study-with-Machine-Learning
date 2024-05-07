@@ -48,10 +48,12 @@ LogicalResult
     SmallVector<Value, 8> lowerBounds(3, c0);
     SmallVector<Value, 8> uperBounds{outputRow, kernelRow, kernelCol};
     SmallVector<int64_t, 8> steps(3, /*Value=*/1);
-    buildAffineLoopNest(
-        rewriter, loc, lowerBounds, uperBounds, steps,
-        [&](OpBuilder &builder, Location loc, ValueRange ivs) {
+    buildAffineLoopNest(rewriter, loc, lowerBounds, uperBounds, steps,[&](OpBuilder &builder, Location loc, ValueRange ivs) {
           // Create strip mining loop.
+          // affine.for %arg3 = #map0(%c0) to #map0(%2) {
+          // affine.for %arg4 = #map0(%c0) to #map0(%0) {
+          // affine.for %arg5 = #map0(%c0) to #map0(%1) {
+          // affine.for %arg6 = #map0(%c0) to #map1(%3) {
           builder.create<AffineForOp>(loc, ValueRange{c0}, builder.getDimIdentityMap(),ValueRange{outputCol}, stripMap, /*Step=*/1, llvm::None, [&](OpBuilder &nestedBuilder, Location nestedLoc, Value iv,ValueRange itrArgs) {
                 // Vectorize the kernel.
                 // Define `*Type`.
