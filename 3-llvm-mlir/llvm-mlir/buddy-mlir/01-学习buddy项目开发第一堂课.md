@@ -24,8 +24,7 @@
 commit page
 https://github.com/buddy-compiler/buddy-mlir/commits/main/?after=ee5c0ede479f69e2643b64b46532f72d683467ee+944
 LogicalResult
-  matchAndRewrite(Operation *op, ArrayRef<Value> operands,
-                  ConversionPatternRewriter &rewriter) const override { // 这个地方match的是通过ConvVectorizationPass的applyPartialConversion来的
+  matchAndRewrite(Operation *op, ArrayRef<Value> operands, ConversionPatternRewriter &rewriter) const override { // 这个地方match的是通过ConvVectorizationPass的applyPartialConversion来的
     auto loc = op->getLoc();   // 这一行代表loc为 linalg.conv_2d 即linalg dialect下的conv_2d op
     auto ctx = op->getContext();
     // Create constant index.
@@ -45,15 +44,17 @@ LogicalResult
     AffineExpr d0;
     bindDims(ctx, d0);
     AffineMap stripMap = AffineMap::get(1, 0, {d0.ceilDiv(stride)}, ctx);
-    SmallVector<Value, 8> lowerBounds(3, c0);
+    SmallVector<Value, 8> lowerBounds(3, c0); 
     SmallVector<Value, 8> uperBounds{outputRow, kernelRow, kernelCol};
     SmallVector<int64_t, 8> steps(3, /*Value=*/1);
-    buildAffineLoopNest(rewriter, loc, lowerBounds, uperBounds, steps,[&](OpBuilder &builder, Location loc, ValueRange ivs) {
+    // buildAffineLoopNest 被重写成为了三个affine.for op
+    // affine.for %arg3 = #map0(%c0) to #map0(%2) 
+    // affine.for %arg4 = #map0(%c0) to #map0(%0) 
+    // affine.for %arg5 = #map0(%c0) to #map0(%1)  -> 这里的 %2 %0 %1 对应的就是 outputRow, kernelRow, kernelCol ，这三个被组合进入了 uperBounds
+    buildAffineLoopNest(rewriter, loc, lowerBounds, uperBounds, steps,
+          [&](OpBuilder &builder, Location loc, ValueRange ivs) {
           // Create strip mining loop.
-          // affine.for %arg3 = #map0(%c0) to #map0(%2) {
-          // affine.for %arg4 = #map0(%c0) to #map0(%0) {
-          // affine.for %arg5 = #map0(%c0) to #map0(%1) {
-          // affine.for %arg6 = #map0(%c0) to #map1(%3) {
+          // AffineForOp 被重写 为了 affine.for %arg6 = #map0(%c0) to #map1(%3) { -> (%3 即 outputCol
           builder.create<AffineForOp>(loc, ValueRange{c0}, builder.getDimIdentityMap(),ValueRange{outputCol}, stripMap, /*Step=*/1, llvm::None, [&](OpBuilder &nestedBuilder, Location nestedLoc, Value iv,ValueRange itrArgs) {
                 // Vectorize the kernel.
                 // Define `*Type`.
@@ -81,7 +82,7 @@ LogicalResult
                 nestedBuilder.create<AffineYieldOp>(nestedLoc                                                                                                // return
               });
         });
-    // Remove the origin convolution operation.
+    // Remove the origin convolution operation. 将原来的op清理即清理了 整个原来的 func.func @conv_2d 整体
     rewriter.eraseOp(op);
     return success();
   }
