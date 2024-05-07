@@ -25,21 +25,22 @@ commit page
 https://github.com/buddy-compiler/buddy-mlir/commits/main/?after=ee5c0ede479f69e2643b64b46532f72d683467ee+944
 LogicalResult
   matchAndRewrite(Operation *op, ArrayRef<Value> operands,
-                  ConversionPatternRewriter &rewriter) const override { // 这个地方不太理解他是怎么match的怎么就找到这个block来逐行match并替换的。。。
-    auto loc = op->getLoc(); 
+                  ConversionPatternRewriter &rewriter) const override { // 这个地方match的是通过ConvVectorizationPass的applyPartialConversion来的
+    auto loc = op->getLoc();   // 这一行代表loc为 linalg.conv_2d 即linalg dialect下的conv_2d op
     auto ctx = op->getContext();
     // Create constant index.
-    Value c0 = rewriter.create<ConstantIndexOp>(loc, 0);  // 这一行对应的生成后的mlir为 %c0 = arith.constant 0 : index
-    Value c1 = rewriter.create<ConstantIndexOp>(loc, 1);
-    // Get input, kernel and output.
-    Value input = op->getOperand(0);
+    Value c0 = rewriter.create<ConstantIndexOp>(loc, 0);  // %c0 = arith.constant 0 : index
+    Value c1 = rewriter.create<ConstantIndexOp>(loc, 1);  // %c1 = constant 1 : index
+    // Get input, kernel and output. linalg.conv_2d ins (%arg0, %arg1: memref<?x?xf32>, memref<?x?xf32>) outs (%arg2: memref<?x?xf32>)
+    // _mlir_ciface_conv_2d(input, kernel, output);
+    Value input = op->getOperand(0); 
     Value kernel = op->getOperand(1);
     Value output = op->getOperand(2);
     // Create DimOp.
-    Value kernelRow = rewriter.create<memref::DimOp>(loc, kernel, c0);
-    Value kernelCol = rewriter.create<memref::DimOp>(loc, kernel, c1);
-    Value outputRow = rewriter.create<memref::DimOp>(loc, output, c0);
-    Value outputCol = rewriter.create<memref::DimOp>(loc, output, c1);
+    Value kernelRow = rewriter.create<memref::DimOp>(loc, kernel, c0); // %0 = memref.dim %arg1, %c0 : memref<?x?xf32>
+    Value kernelCol = rewriter.create<memref::DimOp>(loc, kernel, c1); // %1 = memref.dim %arg1, %c1 : memref<?x?xf32>
+    Value outputRow = rewriter.create<memref::DimOp>(loc, output, c0); // %2 = memref.dim %arg2, %c0 : memref<?x?xf32>
+    Value outputCol = rewriter.create<memref::DimOp>(loc, output, c1); // %3 = memref.dim %arg2, %c1 : memref<?x?xf32>
     // Size of strip mining.
     AffineExpr d0;
     bindDims(ctx, d0);
