@@ -19,7 +19,7 @@
  }
 这也被称为「循环展开」（loop unrolling），或「Strip mining」。循环展开的层数由可用寄存器的数量决定。这里的strip=2，并且因为数据规模的问题，j和i是循环倒置的
 ```
-- 
+- 代码理解
 ```
 commit page
 https://github.com/buddy-compiler/buddy-mlir/commits/main/?after=ee5c0ede479f69e2643b64b46532f72d683467ee+944
