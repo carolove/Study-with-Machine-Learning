@@ -23,7 +23,7 @@
 ```
 commit page
 https://github.com/buddy-compiler/buddy-mlir/commits/main/?after=ee5c0ede479f69e2643b64b46532f72d683467ee+944
-// ConversionPattern(linalg::ConvHWOp::getOperationName() 暗示了是对 linalg的conv2d进行conversion match
+// ConversionPattern(linalg::ConvHWOp::getOperationName() 表明是对 linalg的conv2d （linalg::ConvHWOp::getOperationName() -> linalg.conv_2d）进行conversion match
 explicit CBSMConvVectorizationPattern(MLIRContext *context,int64_t strideParam): ConversionPattern(linalg::ConvHWOp::getOperationName(), 1, context) {
     stride = strideParam;
 }
