@@ -84,10 +84,10 @@ LogicalResult
                 // FMA = Fused Multiply + Add
                 Value resultVector = nestedBuilder.create<FMAOp>(loc, inputVector, kernelVector, outputVector);                                              // %8 = vector.fma %6, %5, %7 : vector<256xf32>
                 nestedBuilder.create<AffineVectorStoreOp>(loc, resultVector, output, outputVectorMap,ValueRange{ivs[0], iv});                                // affine.vector_store %8, %arg2[%arg3, %arg6 * 256] : memref<?x?xf32>, vector<256xf32>
-                nestedBuilder.create<AffineYieldOp>(nestedLoc                                                                                                // return
+                nestedBuilder.create<AffineYieldOp>(nestedLoc                                                                                                // yielp 其实是左值赋值
               });
         });
-    // Remove the origin convolution operation. 将原来的op清理即清理了 整个原来的 func.func @conv_2d 整体
+    // Remove the origin convolution operation. 将原来的op清理即清理了 整个原来的 linalg.conv_2d 整体
     rewriter.eraseOp(op);
     return success();
   }
