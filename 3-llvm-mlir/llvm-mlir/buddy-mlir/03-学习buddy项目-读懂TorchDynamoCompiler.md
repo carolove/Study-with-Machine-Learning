@@ -41,6 +41,7 @@ ops_registry = {
     "ReciprocalOp": reciprocal_op,
     "MeanOp": mean_op,
 }
+这些算子就是我们在mkir ir生成中要用到的算子，也是从高级dsl降级的目标算子
 
 ```
 - 以permute_op为例
