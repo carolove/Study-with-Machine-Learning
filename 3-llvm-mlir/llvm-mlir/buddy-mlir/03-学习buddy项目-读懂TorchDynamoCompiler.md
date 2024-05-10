@@ -3,10 +3,9 @@
 
 ## TorchDynamoCompiler 核心算法以及数据结构
 - 核心commit [TorchDynamo compiler ](https://github.com/buddy-compiler/buddy-mlir/pull/208)
-- 核心的函数为from buddy.compiler.frontend import DynamoCompiler ，DynamoCompiler的 importer可以将model graph 转换为 mlir ir，算子替换主要由  primary_registry=tosa.ops_registry
-- 需要将pytorch 的aten ir convert到咱们自定义的primary registry ops上，其中atem ir定义https://pytorch.org/docs/master/ir.html#core-aten-ir
-- 如何通过torch aten ir来构建模型的fx graph  https://pytorch.org/docs/stable/torch.compiler_transformations.html
-- 整个Tensor Operator Set Architecture (TOSA) op在mlir dialect定义的所有op为 https://mlir.llvm.org/docs/Dialects/TOSA/
+- 核心的函数为from buddy.compiler.frontend import DynamoCompiler ，DynamoCompiler的 importer可以将model graph 转换为 mlir ir，算子替换主要由 primary_registry=tosa.ops_registry
+- 需要将pytorch 的[aten ir](https://pytorch.org/docs/master/ir.html#core-aten-ir) convert到咱们自定义的primary registry ops上
+- 整个Tensor Operator Set Architecture (tosa)[https://mlir.llvm.org/docs/Dialects/TOSA/] op在mlir dialect定义的所有op
 - 这个项目需要的tosa的wrapper为
 ```
 frontend/Python/ops/tosa.py中注册的
@@ -87,6 +86,7 @@ def permute_op(node: PermuteOp, symbol_table):
 - 这个提交主要的作用就是利用TorchDynamo, a Python-level JIT compiler introduced in PyTorch 2.0. Using this importer, one can convert a PyTorch function/model to corresponding MLIR code.
 - 需要实现的op的原有，What this importer do is to convert a piece of PyTorch code to the corresponding MLIR code. To achieve it, we write some conversion functions that map PyTorch's operators to MLIR code snippets. Currently, we've mapped about 20 operators. For what operators are supported, please refer to the [frontend/Python/ops](https://github.com/buddy-compiler/buddy-mlir/tree/main/frontend/Python/ops) directory.
 - primary registry的原有， When importer is going to import a PyTorch operator, it will first search the primary registry for the operator's mapping function. If the operator is not found in the primary registry, the importer will try to search the fallback registry. By default, the importer will use `tosa` registry as the primary registry, and all the other registries as the fallback registry.
-- 整个系统流程为 TorchDynamo + llm model -> fx graph = aten ir level -> + primary registry ops -> mlir ir
+- 如何通过torch aten ir来构建模型的[fx graph](https://pytorch.org/docs/stable/torch.compiler_transformations.html)
+- 整个系统流程为 TorchDynamo + llm model -> fx graph = aten ir level -> + primary registry ops -> mlir ir 
 ## 材料
 - [buddy compiler llama 端到端的编译](https://zhuanlan.zhihu.com/p/665429695) 这篇文章已经可以完全理解
