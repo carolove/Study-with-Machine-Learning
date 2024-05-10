@@ -83,4 +83,7 @@ def permute_op(node: PermuteOp, symbol_table):
 - 
 
 ## TorchDynamoCompiler 核心算法- 的讲解
-- 暂时还没有弄清楚为什么要将compiler的primary registry 设置为tosa，而不是linag，这个降级的顺序是怎么判定的，可能还需要从源代码来查找，茶出来tosa被加入时的commit来学习，其次是学习bert这个model引入的时候的commit的来有
+- 这个提交主要的作用就是利用TorchDynamo, a Python-level JIT compiler introduced in PyTorch 2.0. Using this importer, one can convert a PyTorch function/model to corresponding MLIR code.
+- 需要实现的op的原有，What this importer do is to convert a piece of PyTorch code to the corresponding MLIR code. To achieve it, we write some conversion functions that map PyTorch's operators to MLIR code snippets. Currently, we've mapped about 20 operators. For what operators are supported, please refer to the [frontend/Python/ops](https://github.com/buddy-compiler/buddy-mlir/tree/main/frontend/Python/ops) directory.
+- primary registry的原有， When importer is going to import a PyTorch operator, it will first search the primary registry for the operator's mapping function. If the operator is not found in the primary registry, the importer will try to search the fallback registry. By default, the importer will use `tosa` registry as the primary registry, and all the other registries as the fallback registry.
+- 
