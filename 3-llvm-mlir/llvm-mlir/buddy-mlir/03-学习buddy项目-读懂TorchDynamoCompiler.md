@@ -2,6 +2,7 @@
 - 目标 读懂TorchDynamoCompiler，了解从llm 模型导入到mlir ir生成的逻辑，知其然知其所以然
 
 ## TorchDynamoCompiler 核心算法以及数据结构
+- 核心commit [TorchDynamo compiler ](https://github.com/buddy-compiler/buddy-mlir/pull/208)
 - 核心的函数为from buddy.compiler.frontend import DynamoCompiler ，DynamoCompiler的 importer可以将model graph 转换为 mlir ir，算子替换主要由  primary_registry=tosa.ops_registry
 - commit Add tosa operators
 - 整个Tensor Operator Set Architecture (TOSA) op在mlir dialect定义的所有op为 https://mlir.llvm.org/docs/Dialects/TOSA/
