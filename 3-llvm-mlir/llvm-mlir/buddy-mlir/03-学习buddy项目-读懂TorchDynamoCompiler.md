@@ -82,3 +82,4 @@ def permute_op(node: PermuteOp, symbol_table):
 - 
 
 ## TorchDynamoCompiler 核心算法- 的讲解
+- 暂时还没有弄清楚为什么要将compiler的primary registry 设置为tosa，而不是linag，这个降级的顺序是怎么判定的，可能还需要从源代码来查找，茶出来tosa被加入时的commit来学习，其次是学习bert这个model引入的时候的commit的来有
