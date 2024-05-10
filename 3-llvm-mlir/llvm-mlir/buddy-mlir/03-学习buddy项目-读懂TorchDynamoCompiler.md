@@ -5,7 +5,7 @@
 - 核心commit [TorchDynamo compiler ](https://github.com/buddy-compiler/buddy-mlir/pull/208)
 - 核心的函数为from buddy.compiler.frontend import DynamoCompiler ，DynamoCompiler的 importer可以将model graph 转换为 mlir ir，算子替换主要由 primary_registry=tosa.ops_registry
 - 需要将pytorch 的[aten ir](https://pytorch.org/docs/master/ir.html#core-aten-ir) convert到咱们自定义的primary registry ops上
-- 整个Tensor Operator Set Architecture (tosa)[https://mlir.llvm.org/docs/Dialects/TOSA/] op在mlir dialect定义的所有op
+- 整个Tensor Operator Set Architecture [tosa](https://mlir.llvm.org/docs/Dialects/TOSA/) op在mlir dialect定义的所有op
 - 这个项目需要的tosa的wrapper为
 ```
 frontend/Python/ops/tosa.py中注册的
