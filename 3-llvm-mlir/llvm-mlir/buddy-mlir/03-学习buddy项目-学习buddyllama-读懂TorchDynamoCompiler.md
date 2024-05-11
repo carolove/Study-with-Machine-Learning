@@ -8,10 +8,10 @@
 - 整个Tensor Operator Set Architecture [tosa](https://mlir.llvm.org/docs/Dialects/TOSA/) op在mlir dialect定义的所有op
 - 整个mlir 体系关于大模型机器编译过程涉及的dialect
 ```
-![image](https://github.com/carolove/Study-with-Machine-Learning/assets/834467/1207e7fe-ec29-4acf-8fb9-47fc63320ac9)
-
+mlir 体系关于大模型机器编译过程涉及的dialect，如下图
 ```
 
+![image](https://github.com/carolove/Study-with-Machine-Learning/assets/834467/1207e7fe-ec29-4acf-8fb9-47fc63320ac9)
 - 这个项目需要的tosa的wrapper为
 ```
 frontend/Python/ops/tosa.py中注册的
