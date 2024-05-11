@@ -8,12 +8,11 @@
 - 整个Tensor Operator Set Architecture [tosa](https://mlir.llvm.org/docs/Dialects/TOSA/) op在mlir dialect定义的所有op
 - 整个mlir 体系关于大模型机器编译过程涉及的dialect
 ```
-mlir 体系关于大模型机器编译过程涉及的dialect，如下图
-其中核心dialect，
-PyTorch 的 torch dialect
-tosa dialect
-linalg 完美嵌套循环 (perfect loop nest)
-LLVM IR 或者 SPIR-V，通常都是完整 (complete) 的； 它们包含所需的所有指令来表示整个 CPU 后者 GPU 程序
+mlir 体系关于大模型机器编译过程涉及的dialect，如下图,其中核心dialect，
+在最顶层，tf、tflite、以及 torch 等 dialect 用于机器学习框架的接入； mhlo 和 tosa dialect 则将来自各种框架的五花八门的算子集 (op set) 收缩整合， 转化成统一的表示，作为下层 MLIR 代码生成栈的输入程序。
+在其下一层，linalg dialect 主要用来对原问题分块 (tiling) 并映射到硬件计算体系 (compute hierarchy)。
+Memref dialect 这一层主要是用来做内存规划和读写。这一层的位置比较灵活， 既可以在转换成向量抽象之前，也可以在其之后。
+最底层有 llvm 以及 spirv dialect，转换到这一层是为调用 LLVM 编译器栈做进一步的更底层的代码生成，或者产生最终的程序 SPIR-V 二进制表示。
 ```
 
 ![image](https://github.com/carolove/Study-with-Machine-Learning/assets/834467/1207e7fe-ec29-4acf-8fb9-47fc63320ac9)
