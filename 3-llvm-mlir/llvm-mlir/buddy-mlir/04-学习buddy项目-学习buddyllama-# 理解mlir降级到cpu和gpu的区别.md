@@ -8,7 +8,7 @@
 ```
 class BatchMatMulOptimizePattern : public ConversionPattern {
 public:
-  explicit BatchMatMulOptimizePattern(MLIRContext *context,int64_t stepPlaceHolderParam): ConversionPattern(linalg::BatchMatmulOp::getOperationName(), 1,context) {
+  explicit BatchMatMulOptimizePattern(MLIRContext *context,int64_t stepPlaceHolderParam): ConversionPattern(linalg::BatchMatmulOp::getOperationName(), 1,context) { /*linalg::BatchMatmulOp::getOperationName() -> linalg.batch_matmul 匹配重写匹配对象 */
     stepPlaceHolder = stepPlaceHolderParam;
   }
 
