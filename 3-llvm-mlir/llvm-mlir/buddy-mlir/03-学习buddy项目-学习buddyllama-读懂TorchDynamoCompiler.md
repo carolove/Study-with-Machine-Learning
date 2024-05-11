@@ -9,6 +9,11 @@
 - 整个mlir 体系关于大模型机器编译过程涉及的dialect
 ```
 mlir 体系关于大模型机器编译过程涉及的dialect，如下图
+其中核心dialect，
+PyTorch 的 torch dialect
+tosa dialect
+linalg 完美嵌套循环 (perfect loop nest)
+LLVM IR 或者 SPIR-V，通常都是完整 (complete) 的； 它们包含所需的所有指令来表示整个 CPU 后者 GPU 程序
 ```
 
 ![image](https://github.com/carolove/Study-with-Machine-Learning/assets/834467/1207e7fe-ec29-4acf-8fb9-47fc63320ac9)
