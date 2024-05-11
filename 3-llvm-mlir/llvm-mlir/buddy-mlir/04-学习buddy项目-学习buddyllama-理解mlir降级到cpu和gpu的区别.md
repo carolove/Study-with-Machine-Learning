@@ -147,3 +147,47 @@ func.func @buddy_batchmatmul_f32() -> f32{
   return %zero :f32
 }
 ```
+output 其中 linalg.batch_matmul 替换为了
+    %c0 = arith.constant 0 : index
+    %cst = arith.constant 0.000000e+00 : f32
+    %3 = vector.splat %cst : vector<64xf32>
+    %c0_0 = arith.constant 0 : index
+    %dim = memref.dim %0, %c0_0 : memref<2x2x3xf32>
+    %c1 = arith.constant 1 : index
+    %dim_1 = memref.dim %0, %c1 : memref<2x2x3xf32>
+    %c2 = arith.constant 2 : index
+    %dim_2 = memref.dim %1, %c2 : memref<2x3x4xf32>
+    %c1_3 = arith.constant 1 : index
+    %dim_4 = memref.dim %1, %c1_3 : memref<2x3x4xf32>
+    %4 = affine.apply #map(%dim_2)
+    %5 = vector.create_mask %4 : vector<64xi1>
+    %6 = affine.apply #map1(%dim_2)
+    affine.parallel (%arg0) = (0) to (%dim) {
+      affine.prefetch %0[%arg0, %dim_1, %dim_4], read, locality<3>, data : memref<2x2x3xf32>
+      affine.for %arg1 = #map2(%c0) to #map2(%6) {
+        affine.if #set(%arg0)[%dim_2] {
+          affine.for %arg2 = #map2(%c0) to #map2(%dim_4) {
+            %7 = affine.vector_load %1[%arg0, %arg2, %arg1 * 64] : memref<2x3x4xf32>, vector<64xf32>
+            affine.for %arg3 = #map2(%c0) to #map2(%dim_1) {
+              %8 = memref.load %0[%arg0, %arg3, %arg2] : memref<2x2x3xf32>
+              %9 = vector.broadcast %8 : f32 to vector<64xf32>
+              %10 = affine.vector_load %2[%arg0, %arg3, %arg1 * 64] : memref<2x2x4xf32>, vector<64xf32>
+              %11 = vector.fma %9, %7, %10 : vector<64xf32>
+              affine.vector_store %11, %2[%arg0, %arg3, %arg1 * 64] : memref<2x2x4xf32>, vector<64xf32>
+            }
+          }
+        } else {
+          affine.for %arg2 = #map2(%c0) to #map2(%dim_4) {
+            %7 = affine.apply #map3(%arg1)
+            %8 = vector.maskedload %1[%arg0, %arg2, %7], %5, %3 : memref<2x3x4xf32>, vector<64xi1>, vector<64xf32> into vector<64xf32>
+            affine.for %arg3 = #map2(%c0) to #map2(%dim_1) {
+              %9 = memref.load %0[%arg0, %arg3, %arg2] : memref<2x2x3xf32>
+              %10 = vector.broadcast %9 : f32 to vector<64xf32>
+              %11 = vector.maskedload %2[%arg0, %arg3, %7], %5, %3 : memref<2x2x4xf32>, vector<64xi1>, vector<64xf32> into vector<64xf32>
+              %12 = vector.fma %10, %8, %11 : vector<64xf32>
+              vector.maskedstore %2[%arg0, %arg3, %7], %5, %12 : memref<2x2x4xf32>, vector<64xi1>, vector<64xf32>
+            }
+          }
+        }
+      }
+    }
