@@ -3,8 +3,39 @@
 - 这一章主要学习在获得mlir ir的情况下，如何生成target（比如cpu、gpu）设备运行码的过程和逻辑
 - 其次，还需要通过不同的pr，主要是[cpu pr](https://github.com/buddy-compiler/buddy-mlir/pull/216)与[gpu pr](https://github.com/buddy-compiler/buddy-mlir/pull/285)，通过对两个pr的学习理解，弄清楚lowering到异构设备的流程和逻辑，以及主要的程序设计、算法设计
 
- ## 对于理解mlir 的重要的pr
- - [broadcast BatchMatMul optimization pass, 广播批量矩阵乘法优化算法](https://github.com/buddy-compiler/buddy-mlir/pull/187)
+## 对于理解mlir 的重要的pr
+### [broadcast BatchMatMul optimization pass, 广播批量矩阵乘法优化算法](https://github.com/buddy-compiler/buddy-mlir/pull/187)
+- 理论分析
+```
+Tensor, tiling 以及 fusion
+tosa dialect 可以转换成 linalg dialect。 这种转换会保持在张量这一抽象层级，所以其目的并非递降，而是为接下来的转换做准备。 mhlo.dot_general op 和 tosa.matmul op 都可以表示 batch matmul，那么 linalg.batch_matmul op 的意义何在呢？ 因为隐性嵌套循环，tiling 和 fusion 这些对 tile-based 架构非常重要的转换在 linalg.batch_matmul op 上进行更加方便—我们只需要创建显式的嵌套循环，把之前的 linalg op 转移到其内并且缩小 linalg op 操作的范围到一个 slice 就可以了。
+
+比如下面的 tosa.conv2d op：
+
+%0 = "tosa.conv2d"(%input, %filter, %bias)
+       {dilation = [1, 1], pad = [0, 0, 0, 0], stride = [2, 2]}
+     : (tensor<1x225x225x3xf32>, tensor<32x3x3x3xf32>, tensor<32xf32>)
+     -> tensor<1x112x112x32xf32>
+转换成 linalg op 并进行 tiling 和 fusion 之后：
+
+%0 = scf.for %iv0 = ... to ... step ... iter_args(...) -> (tensor<1x112x112x32xf32>) {
+  %1 = scf.for ... {
+    %input_slice = tensor.extract_slice ...
+    %filter_slice = tensor.extract_slice ...
+    %bias_slice = tensor.extract_slice ...
+    %conv = linalg.conv_2d_nhwc_hwcf {...} ins(%input_slice, %filter_slice) ...
+    %generic = linalg.generic ins(%conv, %bias_slice} ... {
+      %add = arith.addf ...
+      linalg.yield %add ...
+    }
+    scf.yield %generic
+  }
+  scf.yield %1
+}
+在嵌套循环之内，我们依然维持着 linalg named op 的形态，以便于进一步的 tiling 和 fusion， 或者进行其他的模式匹配和转换。
+
+```
+- 
 ```
 class BatchMatMulOptimizePattern : public ConversionPattern {
 public:
