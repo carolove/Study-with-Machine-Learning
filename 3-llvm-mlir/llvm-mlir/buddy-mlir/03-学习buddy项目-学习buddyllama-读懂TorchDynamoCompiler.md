@@ -7,7 +7,9 @@
 - 需要将pytorch 的[aten ir](https://pytorch.org/docs/master/ir.html#core-aten-ir) convert到咱们自定义的primary registry ops上
 - 整个Tensor Operator Set Architecture [tosa](https://mlir.llvm.org/docs/Dialects/TOSA/) op在mlir dialect定义的所有op
 - 整个mlir 体系关于大模型机器编译过程涉及的dialect
- ![image](https://github.com/carolove/Study-with-Machine-Learning/assets/834467/a945d581-559c-429e-aa92-0a0e53e7dbfe)
+```
+```
+![image](https://github.com/carolove/Study-with-Machine-Learning/assets/834467/a945d581-559c-429e-aa92-0a0e53e7dbfe)
 - 这个项目需要的tosa的wrapper为
 ```
 frontend/Python/ops/tosa.py中注册的
