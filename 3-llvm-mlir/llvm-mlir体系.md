@@ -18,6 +18,9 @@
 - 在dialect的各个阶段包括operation中注册，pass进入pipeline流程，完成对应的优化
 - 在不同的Dialect层次进行Operation转换或者做变换 = Pass
 - affine这种方言为仿射变换和仿射分析提供了强大的抽象
+- Vector dialect,目的是将小规模子问题进一步分解并映射到硬件寄存器和原生向量指令,即访存向量化
+- Memref dialect 主要是用来做内存规划和读写。这一层的位置比较灵活， 既可以在转换成向量抽象之前，也可以在其之后
+- 
 
 ### dialect的生成
 - 可以借助ODS模块，使用.td文件用mlir-tblgen来自动生成dialect c++，包括dialect、operation等等
