@@ -54,8 +54,8 @@ public:
     auto A_elementType = A.getType().cast<MemRefType>().getElementType();
 
     // Some constants.
-    const Value c0 = rewriter.create<arith::ConstantOp>(loc, rewriter.getIndexAttr(0));
-    const Value step = rewriter.create<arith::ConstantOp>(loc, rewriter.getIndexAttr(stepPlaceHolder));
+    const Value c0 = rewriter.create<arith::ConstantOp>(loc, rewriter.getIndexAttr(0)); // %c0 = arith.constant 0 : index
+    const Value step = rewriter.create<arith::ConstantOp>(loc, rewriter.getIndexAttr(stepPlaceHolder)); // %cst = arith.constant 0.000000e+00 : f32 %3 = vector.splat %cst : vector<64xf32>
     const AffineExpr d0 = rewriter.getAffineDimExpr(0);
     const AffineExpr d1 = rewriter.getAffineDimExpr(1);
     const AffineExpr d2 = rewriter.getAffineDimExpr(2);
@@ -65,12 +65,12 @@ public:
     const Value c0_dynamicType_vec = rewriter.create<vector::SplatOp>(loc, VectorType::get({stepPlaceHolder}, A_elementType), c0_dynamicType);
 
     // Dims
-    Value BATCH = rewriter.create<memref::DimOp>(loc, A, 0); // Batch size
-    Value M = rewriter.create<memref::DimOp>(loc, A, 1);     // A row
-    Value N = rewriter.create<memref::DimOp>(loc, B, 2);     // B col
-    Value K = rewriter.create<memref::DimOp>(loc, B, 1);     // B row
+    Value BATCH = rewriter.create<memref::DimOp>(loc, A, 0); // Batch size // %c0_0 = arith.constant 0 : index //  %dim = memref.dim %0, %c0_0 : memref<2x2x3xf32>
+    Value M = rewriter.create<memref::DimOp>(loc, A, 1);     // A row %c1 = arith.constant 1 : index  %dim_1 = memref.dim %0, %c1 : memref<2x2x3xf32>
+    Value N = rewriter.create<memref::DimOp>(loc, B, 2);     // B col %c2 = arith.constant 2 : index %dim_2 = memref.dim %1, %c2 : memref<2x3x4xf32>
+    Value K = rewriter.create<memref::DimOp>(loc, B, 1);     // B row %c1_3 = arith.constant 1 : index  %dim_4 = memref.dim %1, %c1_3 : memref<2x3x4xf32>
 
-    auto reducedValues = llvm::to_vector<4>(llvm::map_range( ArrayRef<mlir::affine::LoopReduction>{}, [](const mlir::affine::LoopReduction &red) { return red.value; }));
+    auto reducedValues = llvm::to_vector<4>(llvm::map_range( ArrayRef<mlir::affine::LoopReduction>{}, [](const mlir::affine::LoopReduction &red) { return red.value; })); // 丑陋的lambda
 
     // Build parallel loop body.
     auto parallelLoop = rewriter.create<affine::AffineParallelOp>(loc, ValueRange(reducedValues).getTypes(), ValueRange{BATCH},ArrayRef<NamedAttribute>{
