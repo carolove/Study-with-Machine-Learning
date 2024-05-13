@@ -35,119 +35,203 @@ tosa dialect 可以转换成 linalg dialect。 这种转换会保持在张量这
 在嵌套循环之内，我们依然维持着 linalg named op 的形态，以便于进一步的 tiling 和 fusion， 或者进行其他的模式匹配和转换。
 
 ```
-- 
+- linalg.matmul 重写逻辑
 ```
-class BatchMatMulOptimizePattern : public ConversionPattern {
-public:
-  explicit BatchMatMulOptimizePattern(MLIRContext *context,int64_t stepPlaceHolderParam): ConversionPattern(linalg::BatchMatmulOp::getOperationName(), 1,context) { /*linalg::BatchMatmulOp::getOperationName() -> linalg.batch_matmul 匹配重写匹配对象 */
-    stepPlaceHolder = stepPlaceHolderParam;
-  }
-
-  LogicalResult matchAndRewrite(Operation *op, ArrayRef<Value> /*operands*/,ConversionPatternRewriter &rewriter) const override {
+LogicalResult matchAndRewrite(Operation *op, ArrayRef<Value> /*operands*/, ConversionPatternRewriter &rewriter) const override {
     auto loc = op->getLoc();
 
-    // Get input A, B, C.
+    // Retrieve input tensors A, B, and C.
     Value A = op->getOperand(0);
     Value B = op->getOperand(1);
     Value C = op->getOperand(2);
-    // Get ElementType of input and output.
-    auto A_elementType = A.getType().cast<MemRefType>().getElementType();
 
-    // Some constants.
-    const Value c0 = rewriter.create<arith::ConstantOp>(loc, rewriter.getIndexAttr(0)); // %c0 = arith.constant 0 : index
-    const Value step = rewriter.create<arith::ConstantOp>(loc, rewriter.getIndexAttr(stepPlaceHolder)); // %cst = arith.constant 0.000000e+00 : f32 %3 = vector.splat %cst : vector<64xf32>
+    // Acquire the element type of input tensors.
+    Type elementType = A.getType().cast<MemRefType>().getElementType();
+
+    // Define constants.
+    const Value zeroIndex = rewriter.create<arith::ConstantOp>(loc, rewriter.getIndexAttr(0)); // %c0 = arith.constant 0 : index  
     const AffineExpr d0 = rewriter.getAffineDimExpr(0);
     const AffineExpr d1 = rewriter.getAffineDimExpr(1);
     const AffineExpr d2 = rewriter.getAffineDimExpr(2);
-    const AffineExpr c0_affine = rewriter.getAffineConstantExpr(0);
+    const AffineExpr s0 = rewriter.getAffineSymbolExpr(0);
+    const AffineExpr zeroAffine = rewriter.getAffineConstantExpr(0);
 
-    const Value c0_dynamicType = rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(A_elementType));
-    const Value c0_dynamicType_vec = rewriter.create<vector::SplatOp>(loc, VectorType::get({stepPlaceHolder}, A_elementType), c0_dynamicType);
+    const Value zeroElementType = rewriter.create<arith::ConstantOp>( loc, rewriter.getZeroAttr(elementType)); //  %cst = arith.constant 0.000000e+00 : f32
+    const Value zeroElementTypeVec = rewriter.create<vector::SplatOp>(loc, VectorType::get({affineVectorSize}, elementType), zeroElementType); //  %3 = vector.splat %cst : vector<64xf32>
 
-    // Dims
-    Value BATCH = rewriter.create<memref::DimOp>(loc, A, 0); // Batch size // %c0_0 = arith.constant 0 : index //  %dim = memref.dim %0, %c0_0 : memref<2x2x3xf32>
-    Value M = rewriter.create<memref::DimOp>(loc, A, 1);     // A row %c1 = arith.constant 1 : index  %dim_1 = memref.dim %0, %c1 : memref<2x2x3xf32>
-    Value N = rewriter.create<memref::DimOp>(loc, B, 2);     // B col %c2 = arith.constant 2 : index %dim_2 = memref.dim %1, %c2 : memref<2x3x4xf32>
-    Value K = rewriter.create<memref::DimOp>(loc, B, 1);     // B row %c1_3 = arith.constant 1 : index  %dim_4 = memref.dim %1, %c1_3 : memref<2x3x4xf32>
+    // Get dimensions of input tensors.
+    // %c0_0 = arith.constant 0 : index
+    // %dim = memref.dim %0, %c0_0 : memref<2x2x3xf32>
+    // %c1 = arith.constant 1 : index
+    // %dim_1 = memref.dim %0, %c1 : memref<2x2x3xf32>
+    // %c2 = arith.constant 2 : index
+    // %dim_2 = memref.dim %1, %c2 : memref<2x3x4xf32>
+    // %c1_3 = arith.constant 1 : index
+    // %dim_4 = memref.dim %1, %c1_3 : memref<2x3x4xf32>
+    Value batch = rewriter.create<memref::DimOp>(loc, A, 0);
+    Value aRow = rewriter.create<memref::DimOp>(loc, A, 1);
+    Value bCol = rewriter.create<memref::DimOp>(loc, B, 2);
+    Value bRow = rewriter.create<memref::DimOp>(loc, B, 1);
 
-    auto reducedValues = llvm::to_vector<4>(llvm::map_range( ArrayRef<mlir::affine::LoopReduction>{}, [](const mlir::affine::LoopReduction &red) { return red.value; })); // 丑陋的lambda
+    // Calculate the length of the tail, which might not fit in a vector.
+    Value tailLength = rewriter.create<affine::AffineApplyOp>( loc, AffineMap::get(1, 0, d0 % affineVectorSize), ValueRange{bCol}); //  %4 = affine.apply #map(%dim_2)
 
-    // Build parallel loop body.
-    auto parallelLoop = rewriter.create<affine::AffineParallelOp>(loc, ValueRange(reducedValues).getTypes(), ValueRange{BATCH},ArrayRef<NamedAttribute>{
-            rewriter.getNamedAttr( "lowerBoundsGroups", rewriter.getI32TensorAttr(ArrayRef<int32_t>{1})),
-            rewriter.getNamedAttr( "upperBoundsGroups", rewriter.getI32TensorAttr(ArrayRef<int32_t>{1})),
-            rewriter.getNamedAttr("lowerBoundsMap",AffineMapAttr::get(AffineMap::get(0, 0, {c0_affine},rewriter.getContext()))),
-            rewriter.getNamedAttr("upperBoundsMap",AffineMapAttr::get(AffineMap::get(1, 0, {d0}, rewriter.getContext()))),
-            rewriter.getNamedAttr("reductions", rewriter.getArrayAttr({})),
-            rewriter.getNamedAttr("steps", rewriter.getI64ArrayAttr(1))});
+    // Generate a mask vector based on the tail length.
+    Value maskVector = rewriter.create<vector::CreateMaskOp>(loc, VectorType::get({affineVectorSize}, rewriter.getI1Type()),  ValueRange{tailLength}); // %5 = vector.create_mask %4 : vector<64xi1>
 
-    auto body = new Block();
-    rewriter.setInsertionPointToStart(body);
-    body->addArgument(rewriter.getIndexType(), loc);
+    SmallVector<Value, 4U> reducedValues = llvm::to_vector<4>( llvm::map_range(ArrayRef<LoopReduction>{},     [](const LoopReduction &red) { return red.value; }));
 
-    Value ivBatch = body->getArguments()[0];
+    // Apply the column of matrix B.
+    Value appliedColOfB = rewriter.create<affine::AffineApplyOp>( loc, AffineMap::get(1, 0, d0.ceilDiv(affineVectorSize)),ValueRange{bCol}); // %6 = affine.apply #map1(%dim_2)
 
-    rewriter.create<affine::AffinePrefetchOp>(loc, A, AffineMap::get(3, 0, {d0, d1, d2}, rewriter.getContext()),ArrayRef<Value>{ivBatch, c0, c0}, false, 3, true);
-    affine::buildAffineLoopNest(rewriter, loc, {c0}, {K}, 1,
+    // Create the primary parallel batch level loop.
+    //  affine.parallel (%arg0) = (0) to (%dim) {
+    AffineParallelOp parallelBatchLoop = rewriter.create<affine::AffineParallelOp>(loc, ValueRange(reducedValues).getTypes(), ValueRange{batch},
+            ArrayRef<NamedAttribute>{
+                rewriter.getNamedAttr("lowerBoundsGroups",rewriter.getI32TensorAttr({1})),
+                rewriter.getNamedAttr("upperBoundsGroups", rewriter.getI32TensorAttr({1})),
+                rewriter.getNamedAttr( "lowerBoundsMap", AffineMapAttr::get(AffineMap::get(0, 0, {zeroAffine},rewriter.getContext()))),
+                rewriter.getNamedAttr("upperBoundsMap", AffineMapAttr::get(AffineMap::get(1, 0, {d0}, rewriter.getContext()))),
+                rewriter.getNamedAttr("reductions", rewriter.getArrayAttr({})),
+                rewriter.getNamedAttr("steps", rewriter.getI64ArrayAttr({1}))});
+
+    // Create the loop body for the parallel loop.
+    Block *loopBody = new Block();
+    rewriter.setInsertionPointToStart(loopBody);
+    loopBody->addArgument(rewriter.getIndexType(), loc);
+    Value loopVarBatchIdx = loopBody->getArguments()[0];
+
+    // Prefetching data from tensor 'A' for better cache utilization.
+    rewriter.create<affine::AffinePrefetchOp>(loc, A, AffineMap::get(3, 0, {d0, d1, d2}, rewriter.getContext()),ArrayRef<Value>{loopVarBatchIdx, aRow, bRow}, false, 3, true); // affine.prefetch %0[%arg0, %dim_1, %dim_4], read, locality<3>, data : memref<2x2x3xf32>
+
+    affine::buildAffineLoopNest( rewriter, loc, {zeroIndex}, {appliedColOfB}, 1,
         [&](OpBuilder &builder, Location loc, ValueRange ivRange) {
-          Value ivB_row = ivRange.front();
-          affine::buildAffineLoopNest(builder, loc, {c0}, {M}, 1,
-              [&](OpBuilder &builder, Location loc, ValueRange ivRange) {
-                Value ivA_row = ivRange.front();
-                Value applied_n = builder.create<affine::AffineApplyOp>(loc, AffineMap::get(1, 0, d0.ceilDiv(stepPlaceHolder)),ValueRange{N});
-                affine::buildAffineLoopNest(builder, loc, {c0}, {applied_n}, 1,
-                    [&](OpBuilder &builder, Location loc, ValueRange ivRange) {
-                      Value ivB_col = ivRange.front();
-                      Value a_ele = builder.create<affine::AffineLoadOp>(loc, A, ValueRange{ivBatch, ivA_row, ivB_row});
-                      Value a_vec = builder.create<vector::BroadcastOp>(loc,VectorType::get({stepPlaceHolder}, A_elementType),a_ele);
-                      Value b_col_cur =builder.create<arith::MulIOp>(loc, ivB_col, step);
-                      Value tail_len =builder.create<arith::SubIOp>(loc, N, b_col_cur);
-                      Value tail_flag = builder.create<arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::sge, tail_len, step);
-                      builder.create<scf::IfOp>(loc, tail_flag,
-                          [&](OpBuilder &builder, Location loc) {
-                            Value b_vec =builder.create<affine::AffineVectorLoadOp>(loc,VectorType::get({stepPlaceHolder}, A_elementType),B, AffineMap::get(3, 0, {d0, d1, d2 * stepPlaceHolder},rewriter.getContext()),ValueRange{ivBatch, ivB_row, ivB_col});
-                            Value c_vec =builder.create<affine::AffineVectorLoadOp>(loc,VectorType::get({stepPlaceHolder},A_elementType),C,AffineMap::get(3, 0, {d0, d1, d2 * stepPlaceHolder},rewriter.getContext()),ValueRange{ivBatch, ivA_row, ivB_col});
-                            Value result_vec;
-                            if (A_elementType.isIntOrFloat() && 0) { // bug
-                              Value add_vec = builder.create<arith::MulIOp>(loc, a_vec, b_vec);
-                              result_vec = builder.create<arith::AddIOp>(loc, add_vec, c_vec);
-                            } else {
-                              result_vec = builder.create<vector::FMAOp>(loc, a_vec, b_vec, c_vec);
-                            }
-                            builder.create<affine::AffineVectorStoreOp>(loc, result_vec, C,AffineMap::get(3, 0,{d0, d1, d2 * stepPlaceHolder},rewriter.getContext()),ValueRange{ivBatch, ivA_row, ivB_col});
-                            builder.create<scf::YieldOp>(loc);
-                          },
-                          [&](OpBuilder &builder, Location loc) {
-                            Value mask_vec =builder.create<vector::CreateMaskOp>(loc,VectorType::get({stepPlaceHolder},rewriter.getI1Type()),ValueRange{tail_len});
-                            Value b_col_idx_tail =builder.create<arith::MulIOp>(loc, ivB_col,step);
-                            Value b_vec_tail =builder.create<vector::MaskedLoadOp>(loc,VectorType::get({stepPlaceHolder},A_elementType),B,ValueRange{ivBatch, ivB_row,b_col_idx_tail},mask_vec, c0_dynamicType_vec);
-                            Value c_vec_tail =builder.create<vector::MaskedLoadOp>(loc,VectorType::get({stepPlaceHolder},A_elementType),C,ValueRange{ivBatch, ivA_row,b_col_idx_tail},mask_vec, c0_dynamicType_vec);
-                            Value result_vec_tail;
-                            if (A_elementType.isIntOrFloat() && 0) { // bug
-                              Value add_vec = builder.create<arith::MulIOp>(loc, a_vec, b_vec_tail);
-                              result_vec_tail = builder.create<arith::AddIOp>(loc, add_vec, c_vec_tail);
-                            } else {
-                              result_vec_tail = builder.create<vector::FMAOp>(loc, a_vec, b_vec_tail, c_vec_tail);
-                            }
-                            builder.create<vector::MaskedStoreOp>(loc, C,ValueRange{ivBatch, ivA_row, b_col_idx_tail},mask_vec, result_vec_tail);
-                            builder.create<scf::YieldOp>(loc);
-                          });
-                    });
-              });
+          Value loopVarColOfB = ivRange.front();
+
+          // Compile time branch detection.
+          if (C.getType().cast<MemRefType>().isDynamicDim(2) or C.getType().cast<MemRefType>().getDimSize(2) % affineVectorSize !=0) {
+          // affine.if #set(%arg0)[%dim_2] {
+          //   affine.for %arg2 = #map2(%c0) to #map2(%dim_4) {
+          //     %7 = affine.vector_load %1[%arg0, %arg2, %arg1 * 64] : memref<2x3x4xf32>, vector<64xf32>
+          //     affine.for %arg3 = #map2(%c0) to #map2(%dim_1) {
+          //       %8 = memref.load %0[%arg0, %arg3, %arg2] : memref<2x2x3xf32>
+          //       %9 = vector.broadcast %8 : f32 to vector<64xf32>
+          //       %10 = affine.vector_load %2[%arg0, %arg3, %arg1 * 64] : memref<2x2x4xf32>, vector<64xf32>
+          //       %11 = vector.fma %9, %7, %10 : vector<64xf32>
+          //       affine.vector_store %11, %2[%arg0, %arg3, %arg1 * 64] : memref<2x2x4xf32>, vector<64xf32>
+          //     }
+          //   }
+          // } 
+            // Depending on the position, use either full vectors or tail
+            // vectors.
+            affine::AffineIfOp branchingOp = builder.create<affine::AffineIfOp>( loc, IntegerSet::get( 1, 1, {d0 * -affineVectorSize + s0 - affineVectorSize}, {false}),  ValueRange{loopVarBatchIdx, bCol}, true);
+
+            // Branch handling full vector operations.
+            OpBuilder trueBranchBuilder = branchingOp.getThenBodyBuilder();
+            affine::buildAffineLoopNest( trueBranchBuilder, loc, {zeroIndex}, {bRow}, 1,
+                [&](OpBuilder &builder, Location loc, ValueRange ivRange) {
+                  Value loopVarRowOfB = ivRange.front();
+                  Value bVec = builder.create<affine::AffineVectorLoadOp>(loc, VectorType::get({affineVectorSize}, elementType), B,AffineMap::get(3, 0, {d0, d1, d2 * affineVectorSize}, rewriter.getContext()),ValueRange{loopVarBatchIdx, loopVarRowOfB, loopVarColOfB});
+                  affine::buildAffineLoopNest(builder, loc, {zeroIndex}, {aRow}, 1,
+                      [&](OpBuilder &builder, Location loc,ValueRange ivRange) {
+                        Value loopVarRowOfA = ivRange.front();
+                        Value aElement = builder.create<memref::LoadOp>(loc, A,ValueRange{loopVarBatchIdx, loopVarRowOfA,loopVarRowOfB});
+                        Value aVec = builder.create<vector::BroadcastOp>( loc,VectorType::get({affineVectorSize}, elementType),aElement);
+                        Value cVec = builder.create<affine::AffineVectorLoadOp>( loc, VectorType::get({affineVectorSize}, elementType), C, AffineMap::get(3, 0, {d0, d1, d2 * affineVectorSize},   builder.getContext()), ValueRange{loopVarBatchIdx, loopVarRowOfA,loopVarColOfB});
+                        Value computedVec;
+
+                        // Compute the result vector either through integer
+                        // multiplication and addition or fused multiply-add
+                        // based on the element type.
+                        if (isa<IntegerType>(elementType)) {
+                             Value mulVec = builder.create<arith::MulIOp>(loc, aVec, bVec);
+                          computedVec = builder.create<arith::AddIOp>(loc, mulVec, cVec);
+                        } else {
+                          computedVec = builder.create<vector::FMAOp>(loc, aVec, bVec, cVec);
+                        }
+                        builder.create<affine::AffineVectorStoreOp>(loc, computedVec, C, AffineMap::get(3, 0,{d0, d1, d2 * affineVectorSize},builder.getContext()),  ValueRange{loopVarBatchIdx, loopVarRowOfA,  loopVarColOfB});
+                      });
+                });
+
+            // Branch handling operations on the tail.
+            OpBuilder falseBranchBuilder = branchingOp.getElseBodyBuilder();
+            affine::buildAffineLoopNest( falseBranchBuilder, loc, {zeroIndex}, {bRow}, 1,
+                [&](OpBuilder &builder, Location loc, ValueRange ivRange) {
+                  Value loopVarRowOfB = ivRange.front();
+                  Value tailIdxColOfB = builder.create<affine::AffineApplyOp>(  loc, AffineMap::get(1, 0, d0 * affineVectorSize), ValueRange{loopVarColOfB});
+                  Value bVec = builder.create<vector::MaskedLoadOp>(loc, VectorType::get({affineVectorSize}, elementType), B, ValueRange{loopVarBatchIdx, loopVarRowOfB, tailIdxColOfB}, maskVector, zeroElementTypeVec);
+                  affine::buildAffineLoopNest( builder, loc, {zeroIndex}, {aRow}, 1,
+                      [&](OpBuilder &builder, Location loc,ValueRange ivRange) {
+                        Value loopVarRowOfA = ivRange.front();
+                        Value aElement = builder.create<memref::LoadOp>( loc, A, ValueRange{loopVarBatchIdx, loopVarRowOfA,          loopVarRowOfB});
+                        Value aVec = builder.create<vector::BroadcastOp>( loc, VectorType::get({affineVectorSize}, elementType), aElement);
+                        Value cVec = builder.create<vector::MaskedLoadOp>( loc, VectorType::get({affineVectorSize}, elementType), C,ValueRange{loopVarBatchIdx, loopVarRowOfA,            tailIdxColOfB},   maskVector, zeroElementTypeVec);
+                        Value computedVec;
+
+                        // Compute the result vector either through integer
+                        // multiplication and addition or fused multiply-add
+                        // based on the element type.
+                        if (isa<IntegerType>(elementType)) {
+                          Value mulVec =  builder.create<arith::MulIOp>(loc, aVec, bVec);
+                          computedVec =  builder.create<arith::AddIOp>(loc, mulVec, cVec);
+                        } else {
+                          computedVec = builder.create<vector::FMAOp>(  loc, aVec, bVec, cVec);
+                        }
+                        builder.create<vector::MaskedStoreOp>(  loc, C,  ValueRange{loopVarBatchIdx, loopVarRowOfA,tailIdxColOfB},  maskVector, computedVec);
+                      });
+                });
+          } else {
+            // else {
+            // affine.for %arg2 = #map2(%c0) to #map2(%dim_4) {
+            // %7 = affine.apply #map3(%arg1)
+            // %8 = vector.maskedload %1[%arg0, %arg2, %7], %5, %3 : memref<2x3x4xf32>, vector<64xi1>, vector<64xf32> into vector<64xf32>
+            // affine.for %arg3 = #map2(%c0) to #map2(%dim_1) {
+            //   %9 = memref.load %0[%arg0, %arg3, %arg2] : memref<2x2x3xf32>
+            //   %10 = vector.broadcast %9 : f32 to vector<64xf32>
+            //   %11 = vector.maskedload %2[%arg0, %arg3, %7], %5, %3 : memref<2x2x4xf32>, vector<64xi1>, vector<64xf32> into vector<64xf32>
+            //   %12 = vector.fma %10, %8, %11 : vector<64xf32>
+            //   vector.maskedstore %2[%arg0, %arg3, %7], %5, %12 : memref<2x2x4xf32>, vector<64xi1>, vector<64xf32>
+            // }
+            // }
+            // }
+            // }
+            affine::buildAffineLoopNest( builder, loc, {zeroIndex}, {bRow}, 1,
+                [&](OpBuilder &builder, Location loc, ValueRange ivRange) {
+                  Value loopVarRowOfB = ivRange.front();
+                  Value bVec = builder.create<affine::AffineVectorLoadOp>(loc, VectorType::get({affineVectorSize}, elementType), B, AffineMap::get(3, 0, {d0, d1, d2 * affineVectorSize}, rewriter.getContext()), ValueRange{loopVarBatchIdx, loopVarRowOfB, loopVarColOfB});
+                  affine::buildAffineLoopNest(builder, loc, {zeroIndex}, {aRow}, 1,
+                      [&](OpBuilder &builder, Location loc,ValueRange ivRange) {
+                        Value loopVarRowOfA = ivRange.front();
+                        Value aElement = builder.create<memref::LoadOp>(loc, A,ValueRange{loopVarBatchIdx, loopVarRowOfA,loopVarRowOfB});
+                        Value aVec = builder.create<vector::BroadcastOp>(loc,VectorType::get({affineVectorSize}, elementType),aElement);
+                        Value cVec = builder.create<affine::AffineVectorLoadOp>(loc,VectorType::get({affineVectorSize}, elementType), C,AffineMap::get(3, 0,{d0, d1, d2 * affineVectorSize},builder.getContext()),ValueRange{loopVarBatchIdx, loopVarRowOfA,loopVarColOfB});
+                        Value computedVec;
+
+                        // Compute the result vector either through integer
+                        // multiplication and addition or fused multiply-add
+                        // based on the element type.
+                        if (isa<IntegerType>(elementType)) {
+                          Value mulVec =builder.create<arith::MulIOp>(loc, aVec, bVec);
+                          computedVec =builder.create<arith::AddIOp>(loc, mulVec, cVec);
+                        } else {
+                          computedVec = builder.create<vector::FMAOp>(loc, aVec, bVec, cVec);
+                        }
+                        builder.create<affine::AffineVectorStoreOp>(loc, computedVec, C,AffineMap::get(3, 0,{d0, d1, d2 * affineVectorSize},builder.getContext()),ValueRange{loopVarBatchIdx, loopVarRowOfA,loopVarColOfB});
+                      });
+                });
+          }
         });
 
     rewriter.create<affine::AffineYieldOp>(loc);
-    parallelLoop.getRegion().push_back(body);
-    rewriter.setInsertionPointAfter(parallelLoop);
+
+    // Finalize the loop and erase the original operation.
+    parallelBatchLoop.getRegion().push_back(loopBody);
+    rewriter.setInsertionPointAfter(parallelBatchLoop);
 
     rewriter.eraseOp(op);
     return success();
   }
 
-private:
-  int64_t stepPlaceHolder;
-};
-} // end anonymous namespace
 ```
 mlir test filecheck
 ```
