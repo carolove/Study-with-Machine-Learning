@@ -17,6 +17,7 @@
 - passes, analysis\transformations（语义优化变形）\dialect conversions，pass是在编译过程中对中间表示（Intermediate Representation，IR）进行转换和优化的步骤就是一个调度manager的逻辑
 - 在dialect的各个阶段包括operation中注册，pass进入pipeline流程，完成对应的优化
 - 在不同的Dialect层次进行Operation转换或者做变换 = Pass
+- affine这种方言为仿射变换和仿射分析提供了强大的抽象
 
 ### dialect的生成
 - 可以借助ODS模块，使用.td文件用mlir-tblgen来自动生成dialect c++，包括dialect、operation等等
