@@ -262,6 +262,7 @@ func.func @buddy_batchmatmul_f32() -> f32{
   return %zero :f32
 }
 ```
+```
 output 其中 linalg.batch_matmul 替换为了
     %c0 = arith.constant 0 : index
     %cst = arith.constant 0.000000e+00 : f32
@@ -306,3 +307,4 @@ output 其中 linalg.batch_matmul 替换为了
         }
       }
     }
+```
