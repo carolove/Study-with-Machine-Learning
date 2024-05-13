@@ -308,3 +308,21 @@ output 其中 linalg.batch_matmul 替换为了
       }
     }
 ```
+## 没太弄明白的地方
+```
+#map = affine_map<(d0) -> (d0 mod 64)>
+#map1 = affine_map<(d0) -> (d0 ceildiv 64)>
+#map2 = affine_map<(d0) -> (d0)>
+#map3 = affine_map<(d0) -> (d0 * 64)>
+#set = affine_set<(d0)[s0] : (d0 * -64 + s0 - 64 >= 0)>
+
+什么是Dimensions and Symbols
+
+Dimensions和Symbols是多面体结构体中的两种标识符，类型是index。 Dimensions在括号中声明，Symbols在方括号中声明：
+
+// A 2d to 3d affine mapping.
+// d0/d1 are dimensions, s0 is a symbol
+#affine_map2to3 = affine_map<(d0, d1)[s0] -> (d0, d1 + s0, d1 - s0)>
+Dimension标识符用来表示底层数据结构的维度（map、set或更具体地说是一个loop nest或tensor）；例如，三层循环嵌套具有三个dimensional标识符。symbol标识符可被视为感兴趣区域常量的未知量。
+
+```
