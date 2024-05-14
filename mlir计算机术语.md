@@ -5,9 +5,9 @@
 - 结果 (result)
 - 融合 (fuse)
 - 分块 tiling
-- 向量化访存 vectorization 
 - 完美嵌套循环 (perfect loop nest)
 - attr 属性，常量化入参，%0 = "tosa.conv2d"(%input, %filter, %bias) {dilation = [1, 1], pad = [0, 0, 0, 0], stride = [2, 2]}: (tensor<1x225x225x3xf32>, tensor<32x3x3x3xf32>, tensor<32xf32>) -> tensor<1x112x112x32xf32>，其中{}内为属性
 - bufferization 内存化及内存操作
 - distribution 硬件缓存体系 hardware tile 布局映射
+- vectorization 向量化访存
 - indexing map ，用来指定循环变量 (loop induction variable) 如何访问 (access) 操作数 (operand) 以及结果 (result)，eg
