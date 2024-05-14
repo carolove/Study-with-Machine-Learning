@@ -7,4 +7,5 @@
 - 分块 tiling
 - 向量化访存 vectorization 
 - 完美嵌套循环 (perfect loop nest)
+- attr 属性，常量化入参
 - indexing map ，用来指定循环变量 (loop induction variable) 如何访问 (access) 操作数 (operand) 以及结果 (result)，eg
