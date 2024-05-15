@@ -111,3 +111,4 @@
 %41 = vector.transfer_write %40, %37[%c0, %c0, %c0, %c0] {in_bounds = [true, true, true, true]} : vector<1x1x2x4xf32>, tensor<1x1x2x4xf32>
 %42 = tensor.insert_slice %41 into %arg6...
 ```
+-  convolution 生成的代码复杂，convolution padding 生成了很多 scf.if 来判断在读取的时候是不是越界。 复杂度另一方面来自于 convolution 本身的计算特性
