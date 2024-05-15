@@ -119,4 +119,7 @@ scf.for %ivz = (%idz * %tilez) to %ubz step (%countz * %tilez) {
   }
 }
 ```
+- vector.transfer_read 从张量或者 buffer 中读取高维的向量
+- 生成 vector （向量/寄存器）/arith（标量计算） /math（浮点计算） 操作进行计算
+- 之后生成 vector.transfer_write 操作将结果写回张量或者 buffer
 ## 最终可以 进一步lowering 到scf, cf dialect然后export到目标硬件
