@@ -42,3 +42,7 @@
 
 ## MLIR
 - 目标， 分块、融合、分配、以及向量化，对原问题进行划分并分配到不同的计算单元，之后把小规模的子问题交由 Vector dialect 来执行下一步代码生成
+- MLIR 中，pattern 是最细粒度的 IR 转换工具。开发者把相关的 pattern 收集在一起并 （通过 applyPatternsAndFoldGreedily() 或者其他类似 API）在 IR 上运行来完成一个步骤
+- MLIR pass 是 IR 一致性和合法性的边界
+- 一个 MLIR pass 里面可以含有很多不同的步骤；内部的步骤甚至可以产生不一致的 IR。 但在 pass 运行完成后整个 IR 必须是合法的
+- 比 pass 粒度更大的是 pass pipeline。Pass pipeline 组合不同的 pass 一步步完成整个代码生成流程。
