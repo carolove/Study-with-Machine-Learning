@@ -15,7 +15,7 @@ for from 0 to d0 step 128
       for from 0 to 256 step 1
 
 ```
-
+```
 记录一下自己整理的非整除tile size 实际切分处理过程的计算；
 1. 输入###input:    
 tensor<40x60x90xf32>
@@ -92,6 +92,6 @@ result：
 affine_map<()[s0] -> (11, (s0 floordiv 9) * -11 + ((s0 floordiv 9) floordiv 6) * 66 + 60)>()[%wg_id_x]
 
 大概画一下实际映射关系：
-
+```
 ![image](https://github.com/carolove/Study-with-Machine-Learning/assets/834467/c84c7c7f-8278-4dee-85d3-8f236c0e07fb)
 
