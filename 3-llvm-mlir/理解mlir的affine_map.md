@@ -95,3 +95,5 @@ affine_map<()[s0] -> (11, (s0 floordiv 9) * -11 + ((s0 floordiv 9) floordiv 6) *
 ```
 ![image](https://github.com/carolove/Study-with-Machine-Learning/assets/834467/c84c7c7f-8278-4dee-85d3-8f236c0e07fb)
 
+## affine_map总结
+- affine_map 可以看成一个闭包函数，一个lambda函数，一个算术映射关系的lambda
