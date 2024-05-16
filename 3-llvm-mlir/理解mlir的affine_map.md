@@ -41,21 +41,18 @@ d0=((s0 floordiv 9) floordiv 6)
 
 实际Tile结果的IR如下：
 d2:
-splitDim :%workgroup_id_x = hal.interface.workgroup.id[0] : index
-dimValue : %7=affine.apply affine_map<()[s0] -> (s0 mod 9)>()[%workgroup_id_x]
+splitDim : %workgroup_id_x = hal.interface.workgroup.id[0] : index
+dimValue : %7 = affine.apply affine_map<()[s0] -> (s0 mod 9)>()[%workgroup_id_x]
 numTiles : %6 = affine.apply affine_map<() -> (9)>()
 
 d1:
-splitDim : %8=affine.apply affine_map<()[s0] -> (s0 floordiv 9)>()[%workgroup_id_x]
-dimValue : %10 =  affine.apply 
-affine_map<()[s0] -> ((s0 floordiv 9) mod 6)>()[%workgroup_id_x]
-numTiles :%9 = affine.apply affine_map<() -> (6)>()
+splitDim : %8 =  affine.apply affine_map<()[s0] -> (s0 floordiv 9)>()[%workgroup_id_x]
+dimValue : %10 = affine.apply affine_map<()[s0] -> ((s0 floordiv 9) mod 6)>()[%workgroup_id_x]
+numTiles : %9 =  affine.apply affine_map<() -> (6)>()
 
 d0:
-splitDim :%11 = affine.apply 
-affine_map<()[s0] -> ((s0 floordiv 9) floordiv 6)>()[%workgroup_id_x]
-dimValue : %11 = affine.apply 
-affine_map<()[s0] -> ((s0 floordiv 9) floordiv 6)>()[%workgroup_id_x]
+splitDim : %11 = affine.apply affine_map<()[s0] -> ((s0 floordiv 9) floordiv 6)>()[%workgroup_id_x]
+dimValue : %11 = affine.apply affine_map<()[s0] -> ((s0 floordiv 9) floordiv 6)>()[%workgroup_id_x]
 numTiles : %12 = affine.apply affine_map<() -> (40)>()
 
 4. Distribute Info
@@ -71,16 +68,14 @@ step_partitioned = step * nprocs    -----{s0 * s1} {step, nprocs}
 minMap = (tileSize , ub - lb )    ---------{s0, s1 - d0} {lb, tileSize, ub}
 
 5. 举个栗子
-以d1维度为例：
-distributeLB param：
+以d1维度为例： distributeLB param：
 lb: 0 ;
 procId : %10 = affine.apply affine_map<()[s0] -> ((s0 floordiv 9) mod 6)>()[%workgroup_id_x]
 step : %9 = affine.apply affine_map<() -> (6)>()
 
 计算公式 ：{lb + procId * step}
 result： 
-%15 = affine.apply 
-affine_map<()[s0] -> ((s0 floordiv 9) * 11 - ((s0 floordiv 9) floordiv 6) * 66)>()[%workgroup_id_x]
+%15 = affine.apply affine_map<()[s0] -> ((s0 floordiv 9) * 11 - ((s0 floordiv 9) floordiv 6) * 66)>()[%workgroup_id_x]
 size param:
 lb : %15 = affine.apply affine_map<()[s0] -> ((s0 floordiv 9) * 11 - ((s0 floordiv 9) floordiv 6) * 66)>()[%workgroup_id_x] 
 tileSize: %c11 = arith.constant 11 : index
@@ -88,8 +83,7 @@ ub :  %c60 = arith.constant 60 : index
 
 计算公式 ：{s0, s1 - d0}
 result：
-%17 = affine.min 
-affine_map<()[s0] -> (11, (s0 floordiv 9) * -11 + ((s0 floordiv 9) floordiv 6) * 66 + 60)>()[%wg_id_x]
+%17 = affine.min affine_map<()[s0] -> (11, (s0 floordiv 9) * -11 + ((s0 floordiv 9) floordiv 6) * 66 + 60)>()[%wg_id_x]
 
 大概画一下实际映射关系：
 ```
