@@ -1,4 +1,4 @@
-# 用mlir代码理解机器编译之matmul从linalg到vector的lowering
+# 用mlir代码理解机器编译之matmul从linalg和vector降级lowering到设备级IR
 - linalg
 - vector
 - Unrolling
