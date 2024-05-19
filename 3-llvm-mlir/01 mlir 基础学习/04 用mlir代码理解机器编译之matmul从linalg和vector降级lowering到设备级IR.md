@@ -1,11 +1,36 @@
 # 用mlir代码理解机器编译之matmul从linalg和vector降级lowering到设备级IR
-- linalg
-- vector
+- 原始mlir
+- linalg级
+- vector级
 - Unrolling
 - 清理高维向量
 - Hoisting
 - Lowering
 - 每一步都对比代码，然后和原文注解进行对比，争取理解 affine_map
+## 原始mlir
+```
+func.func @dot_dispatch_0_matmul_128x64x256() {
+    %c0 = arith.constant 0 : index
+    %cst = arith.constant 0.000000e+00 : f32
+    %0 = hal.interface.binding.subspan set(0) binding(0) type(storage_buffer) offset(%c0) alignment(64) : !flow.dispatch.tensor<readonly:128x256xf32>
+    %1 = hal.interface.binding.subspan set(0) binding(1) type(storage_buffer) offset(%c0) alignment(64) : !flow.dispatch.tensor<readonly:256x64xf32>
+    %2 = hal.interface.binding.subspan set(0) binding(2) type(storage_buffer) offset(%c0) alignment(64) : !flow.dispatch.tensor<readonly:128x64xf32>
+    %3 = hal.interface.binding.subspan set(0) binding(3) type(storage_buffer) offset(%c0) alignment(64) : !flow.dispatch.tensor<writeonly:128x64xf32>
+    %4 = flow.dispatch.tensor.load %0, offsets = [0, 0], sizes = [128, 256], strides = [1, 1] : !flow.dispatch.tensor<readonly:128x256xf32> -> tensor<128x256xf32>
+    %5 = flow.dispatch.tensor.load %1, offsets = [0, 0], sizes = [256, 64], strides = [1, 1] : !flow.dispatch.tensor<readonly:256x64xf32> -> tensor<256x64xf32>
+    %6 = flow.dispatch.tensor.load %2, offsets = [0, 0], sizes = [128, 64], strides = [1, 1] : !flow.dispatch.tensor<readonly:128x64xf32> -> tensor<128x64xf32>
+    %7 = linalg.init_tensor [128, 64] : tensor<128x64xf32>
+    %8 = linalg.fill ins(%cst : f32) outs(%7 : tensor<128x64xf32>) -> tensor<128x64xf32>
+    %9 = linalg.matmul ins(%4, %5 : tensor<128x256xf32>, tensor<256x64xf32>) outs(%8 : tensor<128x64xf32>) -> tensor<128x64xf32>
+    %10 = linalg.generic {indexing_maps = [#map, #map, #map], iterator_types = ["parallel", "parallel"]} ins(%9, %6 : tensor<128x64xf32>, tensor<128x64xf32>) outs(%7 : tensor<128x64xf32>) {
+    ^bb0(%arg0: f32, %arg1: f32, %arg2: f32):
+      %11 = arith.subf %arg0, %arg1 : f32
+      linalg.yield %11 : f32
+    } -> tensor<128x64xf32>
+    flow.dispatch.tensor.store %10, %3, offsets = [0, 0], sizes = [128, 64], strides = [1, 1] : tensor<128x64xf32> -> !flow.dispatch.tensor<writeonly:128x64xf32>
+    return
+}
+```
 ## Tiling分块后，linalg 层级的matmul
 ```
 func.func @dot_dispatch_0_matmul_128x64x256() {
