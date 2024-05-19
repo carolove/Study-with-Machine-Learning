@@ -6,7 +6,7 @@
 - Hoisting
 - Lowering
 - 每一步都对比代码，然后和原文注解进行对比，争取理解 affine_map
-## linalg 层级的matmul
+## Tiling分块后，linalg 层级的matmul
 ```
 func.func @dot_dispatch_0_matmul_128x64x256() {
   %c256 = arith.constant 256 : index
