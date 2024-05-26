@@ -44,6 +44,157 @@ std::set<gpu::AllocOp *> unDeallocatedOperations;
     %memref_0 = gpu.alloc  () : memref<2048x5376xf32>
     gpu.memcpy  %memref_0, %arg1 : memref<2048x5376xf32>, memref<2048x5376xf32>
 ```
+
+```
+    funcOp->walk<WalkOrder::PreOrder>([&](Operation *nestedOp) {
+    // Replace all allocations with GPU.alloc
+    if (auto allocOp = dyn_cast<memref::AllocOp>(nestedOp)) {  // 这部分是 memref.alloc()  替换为gpu alloc
+      // Rewrite this allocOp to gpu.alloc, change for all users
+      builder.setInsertionPointAfter(allocOp);
+      auto result = allocOp->getResult(0);
+      auto memrefType = dyn_cast<MemRefType>(result.getType());
+      auto memorySpace = memrefType.getMemorySpace();
+
+      // Filter operations.
+      if (memorySpace) {
+        if (auto intMemorySpace = llvm::dyn_cast<IntegerAttr>(memorySpace)) {
+          if (intMemorySpace.getInt() != 0) {
+            return WalkResult::advance();
+          }
+        }
+        else if (auto gpuMemorySpace = llvm::dyn_cast<gpu::AddressSpaceAttr>(memorySpace)){
+          if (gpuMemorySpace.getValue()!=gpu::AddressSpace::Global) {
+            return WalkResult::advance();
+          }
+        }
+        else return WalkResult::advance();
+      }
+
+      auto gpuAllocOp = builder.create<gpu::AllocOp>(
+          allocOp->getLoc(), TypeRange({memrefType}), ValueRange({}));
+      auto users = result.getUsers();
+      std::vector<Operation *> usersVec(users.begin(), users.end());
+      for (auto user : usersVec) {
+        for (size_t j = 0; j < user->getNumOperands(); j++) {
+          // Only the return value will not have dealloc op
+          if (auto deallocOp = dyn_cast<memref::DeallocOp>(user)) {
+            builder.setInsertionPointAfter(deallocOp);
+            auto gpuDeallocOp = builder.create<gpu::DeallocOp>(
+                deallocOp->getLoc(), TypeRange(), ValueRange(),
+                gpuAllocOp.getResult(0));
+            deallocOp->erase();
+          } else if (user->getOperand(j) == result) {
+            user->setOperand(j, gpuAllocOp.getResult(0));
+          }
+        }
+      }
+      allocOp->erase();  // 需要删除原来的memref.alloc() 
+    }
+    // Replace all memory.copy operations with gpu.memcpy
+    // 这次演示中应该没有cpy
+    else if (auto copyOp = dyn_cast<memref::CopyOp>(nestedOp)) {
+      auto src = copyOp.getOperand(0);
+      auto dst = copyOp.getOperand(1);
+      // Notice: GPU.memcpy has a different src dst order
+      builder.setInsertionPointAfter(copyOp);
+      auto gpuMemcpyOp = builder.create<gpu::MemcpyOp>(
+          copyOp->getLoc(), TypeRange(), ValueRange(), dst, src);
+      {
+        auto users = src.getUsers();
+        std::vector<Operation *> usersVec(users.begin(), users.end());
+        for (auto user : usersVec) {
+          for (size_t j = 0; j < user->getNumOperands(); j++) {
+            if (user->getOperand(j) == src) {
+              user->setOperand(j, gpuMemcpyOp.getOperand(1));
+            }
+          }
+        }
+      }
+      {
+        auto users = dst.getUsers();
+        std::vector<Operation *> usersVec(users.begin(), users.end());
+        for (auto user : usersVec) {
+          for (size_t j = 0; j < user->getNumOperands(); j++) {
+            if (user->getOperand(j) == src) {
+              user->setOperand(j, gpuMemcpyOp.getOperand(0));
+            }
+          }
+        }
+      }
+      copyOp->erase();
+    }
+    // Allocate space on GPU and copy global memrefs to GPU, needs deallocation
+    // 这部分应该也是没有的，不需要将memory cpy去gpu，已经在入参操作完成了
+    else if (auto getGlobalOp = dyn_cast<memref::GetGlobalOp>(nestedOp)) {
+      builder.setInsertionPointAfter(getGlobalOp);
+      auto result = getGlobalOp->getResult(0);
+      auto memrefType = dyn_cast<MemRefType>(result.getType());
+      auto gpuAllocOp = builder.create<gpu::AllocOp>(
+          getGlobalOp->getLoc(), TypeRange({memrefType}), ValueRange({}));
+      unDeallocatedOperations.insert(&gpuAllocOp);
+      auto src = result;
+      auto dst = gpuAllocOp->getResult(0);
+      auto gpuMemcpyOp = builder.create<gpu::MemcpyOp>(
+          gpuAllocOp->getLoc(), TypeRange(), ValueRange(), dst, src);
+      {
+        auto users = src.getUsers();
+        std::vector<Operation *> usersVec(users.begin(), users.end());
+        for (auto user : usersVec) {
+          if (isa<gpu::MemcpyOp>(user))
+            continue;
+          // TODO: replace with src.replaceAllUsesExcept()
+          for (size_t j = 0; j < user->getNumOperands(); j++) {
+            if (user->getOperand(j) == src) {
+              user->setOperand(j, dst);
+            }
+          }
+        }
+      }
+    }
+    // Copy data back to CPU, deallocate GPU, then return
+    // 这是将最终的return 替换为
+    // %alloc = memref.alloc() : memref<5376x5376xf32>
+    // gpu.memcpy  %alloc, %memref_5 : memref<5376x5376xf32>, memref<5376x5376xf32>
+    // gpu.dealloc  %memref_5 : memref<5376x5376xf32>
+    // return %alloc : memref<5376x5376xf32>
+    else if (auto returnOp = dyn_cast<func::ReturnOp>(nestedOp)) {
+      builder.setInsertionPoint(returnOp);
+
+      for (auto *gpuAllocOp : unDeallocatedOperations) {
+        auto gpuDeallocOp = builder.create<gpu::DeallocOp>(
+            builder.getUnknownLoc(), TypeRange(), ValueRange(),
+            gpuAllocOp->getResult(0));
+      }
+      builder.setInsertionPoint(returnOp);
+      for (unsigned i = 0; i < returnOp.getNumOperands(); ++i) {
+        auto val = returnOp->getOperand(i);
+        auto memRefType = dyn_cast<MemRefType>(val.getType());
+        auto allocOp = builder.create<memref::AllocOp>(builder.getUnknownLoc(),
+                                                       memRefType);
+        auto gpuMemcpyOp = builder.create<gpu::MemcpyOp>(
+            allocOp.getLoc(), TypeRange(), ValueRange(), allocOp->getResult(0),
+            val);
+        auto gpuDeallocOp = builder.create<gpu::DeallocOp>(
+            gpuMemcpyOp->getLoc(), TypeRange(), ValueRange(), val);
+        returnOp->setOperand(i, allocOp->getResult(0));
+      }
+    }
+    return WalkResult::advance();
+  })
+
+    从
+    %alloc = memref.alloc() {alignment = 64 : i64} : memref<5376x5376xf32>
+    gpu.launch_func  @matmul_kernel::@matmul_kernel(
+    return %alloc : memref<5376x5376xf32>
+    替换为
+    %memref_5 = gpu.alloc  () : memref<5376x5376xf32>
+    gpu.dealloc  %memref_0 : memref<2048x5376xf32>
+    gpu.launch_func  @matmul_kernel::@matmul_kernel(
+    %alloc = memref.alloc() : memref<5376x5376xf32>
+    gpu.memcpy  %alloc, %memref_5 : memref<5376x5376xf32>, memref<5376x5376xf32>
+    gpu.dealloc  %memref_5 : memref<5376x5376xf32>
+    return %alloc : memref<5376x5376xf32>
+```
 ## mlir演示
 ```
 代码变更
