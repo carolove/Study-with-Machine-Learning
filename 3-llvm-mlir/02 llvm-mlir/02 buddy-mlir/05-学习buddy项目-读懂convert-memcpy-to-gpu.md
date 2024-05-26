@@ -1,7 +1,7 @@
 # 学习buddy项目-读懂convert-memcpy-to-gpu
 ## 原理
 ```
-其实就是将gpu.launch_func 涉及的矩阵入参，替换为memref替换为gpu.alloc&gpu.memcpy&gpu.dealloc
+其实就是将gpu.launch_func 涉及的矩阵入参，将memref替换为gpu.alloc&gpu.memcpy&gpu.dealloc
 ```
 ## 核心代码
 ```
