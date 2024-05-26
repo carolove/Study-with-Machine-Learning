@@ -4,6 +4,7 @@
 其实就是将gpu.launch_func 涉及的矩阵入参，将memref替换为gpu.alloc&gpu.memcpy&gpu.dealloc
 ```
 ## 核心代码
+### 修改入参
 ```
 auto funcOp = getOperation();
 std::set<gpu::AllocOp *> unDeallocatedOperations;
@@ -46,7 +47,9 @@ std::set<gpu::AllocOp *> unDeallocatedOperations;
     %memref_0 = gpu.alloc  () : memref<2048x5376xf32>
     gpu.memcpy  %memref_0, %arg1 : memref<2048x5376xf32>, memref<2048x5376xf32>
 ```
-**这部分是 memref.alloc()  替换为gpu alloc**
+
+### 修改代码块中的memref
+- **这部分是 memref.alloc()  替换为gpu alloc**
 ```
     funcOp->walk<WalkOrder::PreOrder>([&](Operation *nestedOp) {
     // Replace all allocations with GPU.alloc
@@ -94,7 +97,7 @@ std::set<gpu::AllocOp *> unDeallocatedOperations;
     }
     // Replace all memory.copy operations with gpu.memcpy
 ```
- **这次演示中应该没有cpy,在这个项目中其实是可以删除的，并没有用到**
+ - **这次演示中应该没有cpy,在这个项目中其实是可以删除的，并没有用到**
 ```
     else if (auto copyOp = dyn_cast<memref::CopyOp>(nestedOp)) {
       auto src = copyOp.getOperand(0);
@@ -128,7 +131,7 @@ std::set<gpu::AllocOp *> unDeallocatedOperations;
       copyOp->erase();
     }
 ```
-**这部分应该也是没有的，不需要将memory cpy去gpu，已经在入参操作完成了**
+- **这部分应该也是没有的，不需要将memory cpy去gpu，已经在入参操作完成了**
 ```
     // Allocate space on GPU and copy global memrefs to GPU, needs deallocation
     else if (auto getGlobalOp = dyn_cast<memref::GetGlobalOp>(nestedOp)) {
@@ -158,11 +161,13 @@ std::set<gpu::AllocOp *> unDeallocatedOperations;
       }
     }
 ```
-**这是将最终的return 替换为
+- **这是将最终的return 替换为**
+```
 %alloc = memref.alloc() : memref<5376x5376xf32>
 gpu.memcpy  %alloc, %memref_5 : memref<5376x5376xf32>, memref<5376x5376xf32>
 gpu.dealloc  %memref_5 : memref<5376x5376xf32>
-return %alloc : memref<5376x5376xf32>**
+return %alloc : memref<5376x5376xf32>
+```
 ```
     // Copy data back to CPU, deallocate GPU, then return
     else if (auto returnOp = dyn_cast<func::ReturnOp>(nestedOp)) {
