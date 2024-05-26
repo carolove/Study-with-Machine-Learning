@@ -5,7 +5,44 @@
 ```
 ## 核心代码
 ```
-
+auto funcOp = getOperation();
+std::set<gpu::AllocOp *> unDeallocatedOperations;
+  OpBuilder builder(funcOp->getContext());
+  // Copy all function arguments to gpu, needs deallocation
+  if (processArgs) {
+    builder.setInsertionPointToStart(&(funcOp.getBody().front()));
+    unsigned numArgs = funcOp.getNumArguments();
+    for (unsigned i = 0; i < numArgs; ++i) {
+      BlockArgument arg = funcOp.getArgument(i);
+      // Create a gpu.alloc op, then copy memory to it
+      // TODO: Move this out of operation, make the copy process async
+      auto memrefType = dyn_cast<MemRefType>(arg.getType());
+      auto gpuAllocOp = builder.create<gpu::AllocOp>(
+          builder.getUnknownLoc(), TypeRange({memrefType}), ValueRange({}));
+      unDeallocatedOperations.insert(&gpuAllocOp);
+      auto gpuMemcpyOp = builder.create<gpu::MemcpyOp>(
+          gpuAllocOp.getLoc(), TypeRange(), ValueRange(),
+          gpuAllocOp.getResult(0), arg);
+      // Replace all users with GPU memory
+      auto users = arg.getUsers();
+      std::vector<Operation *> usersVec(users.begin(), users.end());
+      for (auto user : usersVec) {
+        // Don't replace memcpy's operand
+        if (isa<gpu::MemcpyOp>(user))
+          continue;
+        for (size_t j = 0; j < user->getNumOperands(); j++) {
+          if (user->getOperand(j) == arg) {
+            user->setOperand(j, gpuAllocOp.getResult(0));
+          }
+        }
+      }
+    }
+  }
+这部分相当于将入参修改为gpu memory，基本上是insert操作，没有op erase
+    %memref = gpu.alloc  () : memref<5376x2048xf32>
+    gpu.memcpy  %memref, %arg0 : memref<5376x2048xf32>, memref<5376x2048xf32>
+    %memref_0 = gpu.alloc  () : memref<2048x5376xf32>
+    gpu.memcpy  %memref_0, %arg1 : memref<2048x5376xf32>, memref<2048x5376xf32>
 ```
 ## mlir演示
 ```
