@@ -38,17 +38,19 @@ std::set<gpu::AllocOp *> unDeallocatedOperations;
       }
     }
   }
-这部分相当于将入参修改为gpu memory，基本上是insert操作，没有op erase
+```
+**这部分相当于将入参修改为gpu memory，基本上是insert操作，没有op erase**
+```
     %memref = gpu.alloc  () : memref<5376x2048xf32>
     gpu.memcpy  %memref, %arg0 : memref<5376x2048xf32>, memref<5376x2048xf32>
     %memref_0 = gpu.alloc  () : memref<2048x5376xf32>
     gpu.memcpy  %memref_0, %arg1 : memref<2048x5376xf32>, memref<2048x5376xf32>
 ```
-
+**这部分是 memref.alloc()  替换为gpu alloc**
 ```
     funcOp->walk<WalkOrder::PreOrder>([&](Operation *nestedOp) {
     // Replace all allocations with GPU.alloc
-    if (auto allocOp = dyn_cast<memref::AllocOp>(nestedOp)) {  // **这部分是 memref.alloc()  替换为gpu alloc**
+    if (auto allocOp = dyn_cast<memref::AllocOp>(nestedOp)) {  
       // Rewrite this allocOp to gpu.alloc, change for all users
       builder.setInsertionPointAfter(allocOp);
       auto result = allocOp->getResult(0);
@@ -91,7 +93,9 @@ std::set<gpu::AllocOp *> unDeallocatedOperations;
       allocOp->erase();  // 需要删除原来的memref.alloc() 
     }
     // Replace all memory.copy operations with gpu.memcpy
-    // **这次演示中应该没有cpy,在这个项目中其实是可以删除的，并没有用到**
+```
+ **这次演示中应该没有cpy,在这个项目中其实是可以删除的，并没有用到**
+```
     else if (auto copyOp = dyn_cast<memref::CopyOp>(nestedOp)) {
       auto src = copyOp.getOperand(0);
       auto dst = copyOp.getOperand(1);
@@ -123,8 +127,10 @@ std::set<gpu::AllocOp *> unDeallocatedOperations;
       }
       copyOp->erase();
     }
+```
+**这部分应该也是没有的，不需要将memory cpy去gpu，已经在入参操作完成了**
+```
     // Allocate space on GPU and copy global memrefs to GPU, needs deallocation
-    // **这部分应该也是没有的，不需要将memory cpy去gpu，已经在入参操作完成了**
     else if (auto getGlobalOp = dyn_cast<memref::GetGlobalOp>(nestedOp)) {
       builder.setInsertionPointAfter(getGlobalOp);
       auto result = getGlobalOp->getResult(0);
@@ -151,12 +157,14 @@ std::set<gpu::AllocOp *> unDeallocatedOperations;
         }
       }
     }
+```
+**这是将最终的return 替换为
+%alloc = memref.alloc() : memref<5376x5376xf32>
+gpu.memcpy  %alloc, %memref_5 : memref<5376x5376xf32>, memref<5376x5376xf32>
+gpu.dealloc  %memref_5 : memref<5376x5376xf32>
+return %alloc : memref<5376x5376xf32>**
+```
     // Copy data back to CPU, deallocate GPU, then return
-    // **这是将最终的return 替换为**
-    // %alloc = memref.alloc() : memref<5376x5376xf32>
-    // gpu.memcpy  %alloc, %memref_5 : memref<5376x5376xf32>, memref<5376x5376xf32>
-    // gpu.dealloc  %memref_5 : memref<5376x5376xf32>
-    // return %alloc : memref<5376x5376xf32>
     else if (auto returnOp = dyn_cast<func::ReturnOp>(nestedOp)) {
       builder.setInsertionPoint(returnOp);
 
@@ -181,7 +189,8 @@ std::set<gpu::AllocOp *> unDeallocatedOperations;
     }
     return WalkResult::advance();
   })
-
+```
+```
     从
     %alloc = memref.alloc() {alignment = 64 : i64} : memref<5376x5376xf32>
     gpu.launch_func  @matmul_kernel::@matmul_kernel(
