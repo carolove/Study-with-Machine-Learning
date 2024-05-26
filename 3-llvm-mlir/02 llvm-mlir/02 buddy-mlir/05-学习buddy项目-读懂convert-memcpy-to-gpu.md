@@ -4,7 +4,7 @@
 其实就是将gpu.launch_func 涉及的矩阵入参，将memref替换为gpu.alloc&gpu.memcpy&gpu.dealloc
 ```
 ## 核心代码
-### 修改入参
+### (一) 修改入参
 ```
 auto funcOp = getOperation();
 std::set<gpu::AllocOp *> unDeallocatedOperations;
@@ -48,7 +48,7 @@ std::set<gpu::AllocOp *> unDeallocatedOperations;
     gpu.memcpy  %memref_0, %arg1 : memref<2048x5376xf32>, memref<2048x5376xf32>
 ```
 
-### 修改代码块中的memref
+### (二) 修改代码块中的memref
 - **这部分是 memref.alloc()  替换为gpu alloc**
 ```
     funcOp->walk<WalkOrder::PreOrder>([&](Operation *nestedOp) {
