@@ -14,3 +14,5 @@
 - 相关工作源码层被提交合并到[LLVM/MLIR WMMA](https://github.com/llvm/llvm-project/commits/main/mlir/lib/Conversion/GPUToNVVM/WmmaOpsToNvvm.cpp) 相关提案中了
 - mlir相关的几个dialect：**affine dialect**-多面体编译技术，使依赖分析、循环转换高校可靠；**GPU dialect**-类似于CUDA/OpenCL的通用GPU编程范式，提供与供应商无关的抽象来模拟GPU特定的操作和属性；**nvvm dialect**-提供了直接映射到llvm nvptx后端的操作；**llvm dialect**-mlir中最低级别的抽象；
 - GPU相关解读：**memory角度**看分为四层-global、l2-cache、l1-cache/shared memory、register寄存器；**计算角度**SM与SM cores，其中SM cores包括cuda cores和tensor cores，**编程模型角度**SM的wrap调度器、软件编程模型wrap（32个线程以锁步方式调度执行）
+- 程序线程块执行的原理：线程块-(指定分派)->SM；线程块-(分解)->线程束 /wrap/32线程一束；SM 2个Wrap 调度器-(选择分解后的线程束)->执行；总结来说：1、同一个线程块可以共享shared memory，不同线程块要通过慢的global memory共享数据；1、sync同步源语存在于线程块和wrap之间，同步将让所有线程块的线程都达到同一个同步点，**数据写入shared memory然后由线程块所有线程读取的情况下，需要sync 同步**，在读取/写入shared memory 之前，都必须sync 同步保证正确
+- 
