@@ -11,6 +11,6 @@
 
 ## 论文解读
 - 论文提出，现在市面上在研究GEMM相关优化的工作，主要有这么几个方向，1、开发手工私库支撑比如julia语言API库；2、基于多面体代码生成；3、基于triton编译器；4、基于mlir IR基础设施，本论文是第四种，基于mlir IR基础设施来做高性能代码生成的
-- 相关工作源码层被提交合并到(LLVM/MLIR WMMA)[https://github.com/llvm/llvm-project/commits/main/mlir/lib/Conversion/GPUToNVVM/WmmaOpsToNvvm.cpp] 相关提案中了
+- 相关工作源码层被提交合并到[LLVM/MLIR WMMA](https://github.com/llvm/llvm-project/commits/main/mlir/lib/Conversion/GPUToNVVM/WmmaOpsToNvvm.cpp) 相关提案中了
 - mlir相关的几个dialect：**affine dialect**-多面体编译技术，使依赖分析、循环转换高校可靠；**GPU dialect**-类似于CUDA/OpenCL的通用GPU编程范式，提供与供应商无关的抽象来模拟GPU特定的操作和属性；**nvvm dialect**-提供了直接映射到llvm nvptx后端的操作；**llvm dialect**-mlir中最低级别的抽象；
 - GPU相关解读：
