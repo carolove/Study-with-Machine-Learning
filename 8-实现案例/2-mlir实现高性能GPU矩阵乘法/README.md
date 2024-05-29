@@ -10,7 +10,14 @@
 - [在gpu硬件结构层，矩阵乘法涉及的优化策略，比如共享缓存、寄存器缓存、调度流水线](https://github.com/carolove/Study-with-Machine-Learning/blob/main/4-%E5%AE%9E%E7%8E%B0%E6%A1%88%E4%BE%8B/0-mlir%E5%AE%9E%E7%8E%B0%E9%AB%98%E6%80%A7%E8%83%BDGPU%E7%9F%A9%E9%98%B5%E4%B9%98%E6%B3%95/05-%E5%9C%A8gpu%E7%A1%AC%E4%BB%B6%E7%BB%93%E6%9E%84%E5%B1%82%EF%BC%8C%E7%9F%A9%E9%98%B5%E4%B9%98%E6%B3%95%E6%B6%89%E5%8F%8A%E7%9A%84%E4%BC%98%E5%8C%96%E7%AD%96%E7%95%A5%EF%BC%8C%E6%AF%94%E5%A6%82%E5%85%B1%E4%BA%AB%E7%BC%93%E5%AD%98%E3%80%81%E5%AF%84%E5%AD%98%E5%99%A8%E7%BC%93%E5%AD%98%E3%80%81%E8%B0%83%E5%BA%A6%E6%B5%81%E6%B0%B4%E7%BA%BF.md)
 
 ## 论文解读
-- 论文提出，现在市面上在研究GEMM相关优化的工作，主要有这么几个方向，1、开发手工私库支撑比如julia语言API库；2、基于多面体代码生成；3、基于triton编译器；4、基于mlir IR基础设施，本论文是第四种，基于mlir IR基础设施来做高性能代码生成的
+- 论文提出，现在市面上在研究GEMM相关优化的工作，主要有这么几个方向
+```
+1、开发手工私库支撑比如julia语言API库；
+2、基于多面体代码生成；
+3、基于triton编译器；
+4、基于mlir IR基础设施，
+本论文是第四种，基于mlir IR基础设施来做高性能代码生成的
+```
 - 相关工作源码层被提交合并到[LLVM/MLIR WMMA](https://github.com/llvm/llvm-project/commits/main/mlir/lib/Conversion/GPUToNVVM/WmmaOpsToNvvm.cpp) 相关提案中了
 - llvm将nvptx的wmma api公开为instrinsics，使的mlir对tensor cores的编程成为可能，这些instrinsics和wmma api一一对应
 ### mlir相关的几个dialect
