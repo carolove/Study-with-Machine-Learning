@@ -1,7 +1,7 @@
 # 机器编译学习之路
 - 这个项目的学习目标主要就是为了看懂并实践两篇论文
 - [How to Optimize a CUDA Matmul Kernel for cuBLAS-like Performance](https://siboehm.com/articles/22/CUDA-MMM)
-- [high performance gpu code generation for matrix-matrix multiplication using mlir](https://arxiv.org/pdf/2108.13191)
+- [high performance gpu code generation for matrix-matrix multiplication using mlir](https://arxiv.org/pdf/2108.13191)、[HIGH PERFORMANCE CODE GENERATION IN MLIR](https://arxiv.org/pdf/2003.00532)
 
 # 顶层到地层的技术依赖
 
