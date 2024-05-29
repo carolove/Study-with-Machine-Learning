@@ -6,13 +6,13 @@
 # 顶层到地层的技术依赖
 
 ## How to Optimize a CUDA Matmul Kernel for cuBLAS-like Performance技术依赖
-- c/c++ 基础以及构建基础设施cmake
+- [c/c++ 基础以及构建基础设施cmake](https://github.com/carolove/Study-with-Machine-Learning/tree/main/1-c%2B%2B%E5%9F%BA%E7%A1%80%E4%BB%A5%E5%8F%8Acmake%E6%9E%84%E5%BB%BA%E7%8E%AF%E5%A2%83)
 - cuda程序相关依赖、编程范式以及测试
 - 矩阵乘法优化的通用优化策略，比如多面体变形、循环展开等
 - 在gpu硬件结构层，矩阵乘法涉及的优化策略，比如共享缓存、寄存器缓存、调度流水线等
 
 ## high performance gpu code generation for matrix-matrix multiplication using mlir技术依赖
-- c++ 环境以及cmake build 构建体系
+- [c++ 环境以及cmake build 构建体系](https://github.com/carolove/Study-with-Machine-Learning/tree/main/1-c%2B%2B%E5%9F%BA%E7%A1%80%E4%BB%A5%E5%8F%8Acmake%E6%9E%84%E5%BB%BA%E7%8E%AF%E5%A2%83)
 - llvm/mlir构建新项目的目录组织结构
 - mlir现已存在dialect体系
 - 加入自定义dialect、自定义pass pipeline、自定义rewrite pattern的原则、代码组织结构
