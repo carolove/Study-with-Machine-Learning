@@ -19,32 +19,7 @@
 - 矩阵乘法优化的通用优化策略，比如多面体变形、循环展开等
 - 在gpu硬件结构层，矩阵乘法涉及的优化策略，比如共享缓存、寄存器缓存、调度流水线等
 
-## GPU/CUDA基础
-- GPU的结构-sm/tensor core/全局内存/共享内存/寄存器
-- CUDA基础-thread/全局内存/共享内存/寄存器/合并内存/bank conflict
-## 基础算子
-- add
-- softmax
-- matmul
-- attention
-## CUDA实现基础算子
-- cuda环境、构建、运行、验证，实现add算子
-- cuda实现softmax算子
-- cuda实现matmul算子
-- 学习cuda attention算法
-## CUDA优化SGEMM
-## LLVM/MLIR
-- 主要通过[MLIR For Beginners](https://github.com/j2kun/mlir-tutorial)学习mlir
-### MLIR/mojo学习
-- 通过mojo学习mlir
-### MLIR/triton
-- [构建编译](llvm-mlir-triton/triton学习（一）llvm\triton构建编译.md)
-- 学习triton 的python DSL
-- 学习triton的jit 相关
-- 用triton jit学习实现基础算子（可能要拆的更细才行）
-- 源码解释triton运行、llvm ir下降过程、机器码生成过程
-
-## 额外的中文关联类似文档
+### 额外的中文关联类似文档
 - 聚焦两篇核心文档
 ```
 https://www.lei.chat/zh/posts/mlir-linalg-dialect-and-patterns/

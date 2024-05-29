@@ -10,5 +10,3 @@
 ../../build/bin/buddy-opt matmul-nvvm.mlir -llvm-request-c-wrappers -canonicalize -cse -sccp  -o matmul-c-wrapper.mlir 
 ../../llvm/build/bin/mlir-opt matmul-c-wrapper.mlir --test-lower-to-nvvm="cubin-chip=sm_80 cubin-features=+ptx71 cubin-format=fatbin" -o matmul-cubin.mlir 
 ```
-- gpu dialect
-- nvvm dialect
