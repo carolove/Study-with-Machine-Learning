@@ -1,3 +1,4 @@
+ ../../mlir/llvm-project/build/bin/mlir-opt ./8-实现案例/2-mlir实现高性能GPU矩阵乘法/source/01-00-matmul-gpu.mlir --linalg-generalize-named-ops --linalg-bufferize --convert-linalg-to-affine-loops
 module {
   func.func @matmul_linalg(%arg0: memref<64x32xf32>, %arg1: memref<32x64xf32>, %arg2: memref<64x64xf32>) {
     affine.for %arg3 = 0 to 64 {
