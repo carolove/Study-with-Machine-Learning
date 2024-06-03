@@ -3,7 +3,7 @@
 - [How to Optimize a CUDA Matmul Kernel for cuBLAS-like Performance](https://siboehm.com/articles/22/CUDA-MMM)
 - [high performance gpu code generation for matrix-matrix multiplication using mlir](https://arxiv.org/pdf/2108.13191)、[HIGH PERFORMANCE CODE GENERATION IN MLIR](https://arxiv.org/pdf/2003.00532)
 
-# 顶层到地层的技术依赖
+# 顶层到底层的技术依赖
 
 ## How to Optimize a CUDA Matmul Kernel for cuBLAS-like Performance技术依赖
 - c/c++ 基础以及构建基础设施cmake
