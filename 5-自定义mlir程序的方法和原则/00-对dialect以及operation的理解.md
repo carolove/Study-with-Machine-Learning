@@ -1,4 +1,5 @@
-# 对dialect op的理解
+# 对dialect以及operation的理解
+- dialect，之所以将叫做方言，就是因为他定义了一系列语法格式，基本上就意味着定义了一种新的汇编语法，dialect可以完成对这个dialect定义的汇编语法的读取，读取为mlir 运行时c++统一对象，也可以将这个dialect的c++运行时对象输出到汇编语法到文本
 - 在dialect定义op的过程中，可以用td文件来快速定义和描述该dialect下的op的行为操作
 - 也可以通过手工编码的方式来定义
 
