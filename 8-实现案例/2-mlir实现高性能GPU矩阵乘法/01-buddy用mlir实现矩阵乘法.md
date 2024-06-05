@@ -15,3 +15,11 @@
 ../../llvm/build/bin/mlir-opt ex_source/06-matmul-nvvm.mlir -llvm-request-c-wrappers -canonicalize -cse -sccp -o ex_source/07-matmul-c-wrapper.mlir
 ../../llvm/build/bin/mlir-opt ex_source/07-matmul-c-wrapper.mlir --test-lower-to-nvvm="cubin-chip=sm_80 cubin-features=+ptx71 cubin-format=fatbin" -o ex_source/08-matmul-cubin.mlir
 ```
+
+- 除去mlir opt自带的pass外，只有三个优化环节是buddy项目自定义的
+## 主要的自定义优化还金
+- transform
+- legalize-shmem-outlining
+- convert-memcpy-to-gpu
+
+## transform优化解读
