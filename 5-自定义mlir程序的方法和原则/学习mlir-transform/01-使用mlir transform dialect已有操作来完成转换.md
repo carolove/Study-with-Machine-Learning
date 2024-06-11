@@ -2,9 +2,9 @@
 
 ## 介绍 
 ```
-变换方言允许将变换精确地定位到 IR 中的特定操作并将它们链接起来，即将变换应用于前一个变换产生的操作。为了实现这一点，变换被表示为 IR 中的其他操作。我们将包含这些操作的 IR 称为变换 IR。我们将正在变换的 IR 称为有效载荷 IR。
+变换方言transform dialect的变换行为可以精确地定位到 方言语句/IR 中的特定操作/匹配行，并将它们串连起来。我们将这些变换操作产生的 IR 称为变换 IR。我们将正在进行变换操作的 IR 称为有效载荷 IR。
 
-变换 IR 操作对可能与有效载荷 IR 操作、值或属性相关联的值进行操作。我们将前两种值分别称为操作和值句柄。我们将最后一种值称为参数。
+变换 IR 操作对可能与有效载荷 IR 的操作Op、值或属性相关联的值进行变换。我们将前两种分别称为操作和值句柄。我们将最后一种称为参数。
 
 变换 IR 的应用总是从一个顶层操作开始。在 C++ API 中，此操作传递给函数applyTransforms。此顶层操作指定是否应执行其他变换以及如何执行。最常见的顶层操作transform.named_sequence只是依次应用其主体中列出的其他变换操作，类似于函数或宏。
 
@@ -32,7 +32,7 @@ func.func @fc_relu(%lhs: tensor<512x512xf32>, %rhs: tensor<512x512xf32>,
 ```
 ## 顶级序列操作 
 ```
-出于性能原因，我们希望平铺和融合这些操作以利用缓存局部性。这是需要逐个执行的转换序列，因此我们自然会从相应的顶级转换操作开始。
+出于性能原因，我们希望平铺Tiling和融合Fusion这些操作以利用缓存局部性。这是需要逐个执行的转换序列，因此我们自然会从相应的顶级转换操作开始。
 
 module attributes {transform.with_named_sequence} {
   transform.named_sequence @__transform_main(
@@ -46,7 +46,7 @@ module attributes {transform.with_named_sequence} {
 
 它的特殊名称@__transform_main和第一个参数由解释器传递强制执行，类似于 C 程序的入口点需要被调用的方式，main并且可能具有签名。此参数将与顶级有效负载操作相关联，通常是传递所应用的操作。请注意，当通过或以编程方式int (int argc, char** argv)应用转换时，这些都不是必需的。applyTransformsapplyNamedSequence
 
-其余的入口块参数是可选的，可以与序列中有用的有效负载属性、操作或值相关联。这些也是在调用时指定的applyTransforms。在我们的例子中，我们对要平铺和融合的矩阵乘法和元素运算感兴趣。
+其余的入口块参数是可选的，可以与序列中有用的有效负载属性、操作或值相关联。这些也是在调用时指定的applyTransforms。在我们的例子中，我们对要平铺Tiling和融合Fusion的矩阵乘法和元素运算感兴趣。
 
 所有值句柄都具有 Transform 方言类型。这些类型指定与其关联的有效载荷 IR 实体的某些属性。在此示例中，transform.any_op表示句柄与任意有效载荷操作相关联。相反，transform.op<"X">表示句柄仅与类型的有效载荷操作相关联X。在创建句柄/有效载荷关联时会验证这些约束。对于顶级转换操作的入口块参数，这在函数的早期发生applyTransforms。如果不满足约束，转换应用程序将失败并为用户生成诊断信息。
 
@@ -99,7 +99,7 @@ sequence.mlir:14:13: note: see current operation: %2 = linalg.elemwise_binary {f
 
 ## 指定转换 
 ```
-现在我们已经掌握了要转换的操作，可以开始应用转换了。首先，让我们尝试平铺 matmul 操作本身。
+现在我们已经掌握了要转换的操作，可以开始应用转换了。首先，让我们尝试平铺Tiling matmul 操作本身。
 
 module attributes {transform.with_named_sequence} {
   transform.named_sequence @__transform_main(
@@ -118,7 +118,7 @@ module attributes {transform.with_named_sequence} {
 
 linalg.generic对原始数据子集进行操作的句柄。
 scf.forall张量周围的“多重 for”循环的句柄。
-使用与上面相同的命令运行此转换预计会产生平铺代码。
+使用与上面相同的命令运行此转换预计会产生平铺Tiling代码。
 
 func.func @fc_relu(%arg0: tensor<512x512xf32>,
                    %arg1: tensor<512x512xf32>,
@@ -151,7 +151,7 @@ func.func @fc_relu(%arg0: tensor<512x512xf32>,
     outs(%arg3 : tensor<512x512xf32>) -> tensor<512x512xf32>
   return %2 : tensor<512x512xf32>
 }
-除了生成新句柄之外，平铺变换操作还会消耗操作数句柄。这意味着句柄在此操作之后将失效，并且不应再使用。变换操作需要将其所有操作数标记为已消耗或只读。如果关联的有效载荷操作被擦除或重新创建（这意味着被擦除并以类似的结构重新创建），变换操作通常会消耗操作数。由于句柄本质上是对有效载荷操作的引用，因此如果有效载荷不再存在，它们将变为悬空。
+除了生成新句柄之外，平铺Tiling变换操作还会消耗操作数句柄。这意味着句柄在此操作之后将失效，并且不应再使用。变换操作需要将其所有操作数标记为已消耗或只读。如果关联的有效载荷操作被擦除或重新创建（这意味着被擦除并以类似的结构重新创建），变换操作通常会消耗操作数。由于句柄本质上是对有效载荷操作的引用，因此如果有效载荷不再存在，它们将变为悬空。
 ```
 ## 处理无效和昂贵检查模式 
 ```
@@ -222,7 +222,7 @@ sequence.mlir:27:19: note: invalidated by this transform op that consumes its op
 ```
 ## 使用句柄链接变换 
 ```
-回到变换序列，我们已经平铺了矩阵乘法，但我们也希望平铺和融合元素操作。在结构化操作范式中，典型的做法是平铺某个非循环数据流图中的最后一个操作，然后逐步融合产生其操作数的操作。这样就无需明确平铺所有操作，因为融合可以调整它们的大小并在需要时注入重新计算。因此，我们不会平铺 matmul 操作，而是平铺链中的最后一个操作，然后将前面的操作融合到平铺产生的循环中。
+回到变换序列，我们已经平铺Tiling了矩阵乘法，但我们也希望平铺Tiling和融合Fusion元素操作。在结构化操作范式中，典型的做法是平铺Tiling某个非循环数据流图中的最后一个操作，然后逐步融合Fusion产生其操作数的操作。这样就无需明确平铺Tiling所有操作，因为融合Fusion可以调整它们的大小并在需要时注入重新计算。因此，我们不会平铺Tiling matmul 操作，而是平铺Tiling链中的最后一个操作，然后将前面的操作融合Fusion到平铺Tiling产生的循环中。
 
 module attributes {transform.with_named_sequence} {
   transform.named_sequence @__transform_main(
@@ -260,11 +260,11 @@ module attributes {transform.with_named_sequence} {
     transform.yield
   }
 }
-这样就实现了所需的平铺和融合。
+这样就实现了所需的平铺Tiling和融合Fusion。
 ```
 ## 更多处理失效 
 ```
-最后，我们假设存在一个高效的微内核，或者说一个以内在函数表示的硬件指令，用于 4x4 矩阵乘法。为此，我们需要将融合操作平铺到所需大小，然后对其进行概述。然后可以将生成的函数调用替换为对微内核的调用。
+最后，我们假设存在一个高效的微内核，或者说一个以内在函数表示的硬件指令，用于 4x4 矩阵乘法。为此，我们需要将融合Fusion操作平铺Tiling到所需大小，然后对其进行概述。然后可以将生成的函数调用替换为对微内核的调用。
 
 module attributes {transform.with_named_sequence} {
   transform.named_sequence @__transform_main(
@@ -330,7 +330,7 @@ module attributes {transform.with_named_sequence} {
   }
 }
 此附加转换还说明了嵌套操作的句柄失效。操作transform.loop.outline使用循环的句柄，从而使循环及其中嵌套的任何操作（例如）的句柄失效%2。尝试使用此句柄将导致未定义的行为。（请注意，这种特定形式的大纲不一定需要使用操作数，因为实现仅移动区域而不重新创建操作，但转换的作者还是选择使句柄失效。）
-尝试在概述后访问融合结果会产生以下错误
+尝试在概述后访问融合Fusion结果会产生以下错误
 
 test/Examples/transform/Ch1/invalidation-2.mlir:109:3: error: op uses a handle invalidated by a previously executed transform op
   transform.debug.emit_remark_at %outline_target, "outlined loop" : !transform.any_op
