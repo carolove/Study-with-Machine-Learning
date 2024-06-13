@@ -95,7 +95,7 @@ sequence.mlir:14:13: note: see current operation: %2 = linalg.elemwise_binary {f
 请注意，%arg2与两个元素有效负载操作相关联。任何句柄都与实体列表相关联。各个转换可能会或可能不会关心该列表中元素的顺序。
 ```
 
-## 使用transform 已定义好的Op完成转换
+## 使用transform 已定义好的Op完成Tiling平铺转换
 ```
 现在我们已经掌握了要转换的基本脚本编写和解释器运行逻辑等基本操作，可以开始应用转换了。首先，让我们尝试平铺Tiling matmul 操作本身。
 
@@ -220,7 +220,7 @@ sequence.mlir:21:29: note: handle to invalidated ops
 sequence.mlir:27:19: note: invalidated by this transform op that consumes its operand #0 and invalidates all handles to payload IR entities associated with this operand and entities nested in them
   %loop, %tiled = transform.structured.tile_using_forall %mm tile_sizes [4, 32]
 ```
-## 使用句柄串联变换 
+## 使用句柄串联完成平铺Tiling和融合Fusion变换 
 ```
 回到变换序列，我们已经平铺Tiling了矩阵乘法，但我们也希望平铺Tiling和融合Fusion元素操作。在结构化操作范式中，典型的做法是平铺Tiling某个非循环数据流图中的最后一个操作，然后逐步融合Fusion产生其操作数的操作。这样就无需明确平铺Tiling所有操作，因为融合Fusion可以调整它们的大小并在需要时注入重新计算。因此，我们不会平铺Tiling matmul 操作，而是平铺Tiling链中的最后一个操作，然后将前面的操作融合Fusion到平铺Tiling产生的循环中。
 
