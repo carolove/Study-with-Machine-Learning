@@ -25,7 +25,9 @@ transform.sequence failures(propagate) {
      %arg1: !transform.op<"linalg.matmul">,
      %arg2: !transform.op<"linalg.elemwise_binary">):
   // The actual tiling transformation takes tile sizes as attributes.
-  %loop, %tiled = transform.structured.tile_using_forall %arg1 tile_sizes [4, 32]
+  // 通过增加attr (mapping = [#gpu.block<y>, #gpu.block<x>]) 来保证后继的操作中带上gpu关联属性
+  // %loop, %tiled = transform.structured.tile_using_forall %arg1 tile_sizes [4, 32](mapping = [#gpu.block<y>, #gpu.block<x>]) 
+    %loop, %tiled = transform.structured.tile_using_forall %arg1 tile_sizes [4, 32]
     : (!transform.op<"linalg.matmul">) -> (!transform.any_op, !transform.any_op)
   transform.yield
 }
