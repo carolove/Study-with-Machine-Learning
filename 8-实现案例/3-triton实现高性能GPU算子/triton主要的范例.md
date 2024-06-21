@@ -4,7 +4,7 @@
 ```python
 """
 Vector Addition
-===============
+=========================================================================================================
 
 In this tutorial, you will write a simple vector addition using Triton.
 
@@ -341,7 +341,7 @@ benchmark.run(show_plots=True, print_data=True)
 ```python
 """
 Matrix Multiplication
-=====================
+=========================================================================================================
 In this tutorial, you will write a very short high-performance FP16 matrix multiplication kernel that achieves
 performance on parallel with cuBLAS.
 
@@ -699,7 +699,7 @@ benchmark.run(show_plots=True, print_data=True)
 ```python
 """
 Low-Memory Dropout
-==================
+=========================================================================================================
 
 In this tutorial, you will write a memory-efficient implementation of dropout whose state
 will be composed of a single int32 seed. This differs from more traditional implementations of dropout,
@@ -877,7 +877,7 @@ print(
 ```python
 """
 Layer Normalization
-====================
+=========================================================================================================
 In this tutorial, you will write a high-performance layer normalization
 kernel that runs faster than the PyTorch implementation.
 
@@ -1265,7 +1265,7 @@ bench_layer_norm.run(save_path='.', print_data=True)
 ```python
 """
 Fused Attention
-===============
+=========================================================================================================
 
 This is a Triton implementation of the Flash Attention v2 algorithm from Tri Dao (https://tridao.me/publications/flash2/flash2.pdf)
 Credits: OpenAI kernel team
@@ -1904,7 +1904,7 @@ bench_flash_attention.run(save_path=".", print_data=True)
 ```python
 """
 Libdevice (`tl.math`) function
-==============================
+=========================================================================================================
 Triton can invoke a custom function from an external library.
 In this example, we will use the `libdevice` library (a.k.a `math` in triton) to apply `asin` on a tensor.
 Please refer to https://docs.nvidia.com/cuda/libdevice-users-guide/index.html regarding the semantics of all available libdevice functions.
