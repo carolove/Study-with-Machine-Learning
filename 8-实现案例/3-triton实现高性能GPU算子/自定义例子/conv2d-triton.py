@@ -23,7 +23,7 @@ import triton.language as tl
 ######################################################################################################
 
 
-def RUN_FORMULA_VERY_SLOW(w, k, B, C, T, eps):
+def RUN_FORMULA_VERY_SLOW(weight, k, B, C, T, eps):
     # this is the formula (very slow)
     out = torch.empty((B, C, T), device='cuda')
     for b in range(B):
@@ -31,19 +31,23 @@ def RUN_FORMULA_VERY_SLOW(w, k, B, C, T, eps):
             for t in range(T):
                 s = eps
                 for u in range(0, t+1):
-                    s += w[c][(T-1)-(t-u)] * k[b][c][u]
+                    s += weight[c][(T-1)-(t-u)] * k[b][c][u]
                 out[b][c][t] = s
     return out
 
+@triton.jit
+def RUN_TRITON(w, k, B, C, T, eps):
+
+    return
 
 # @torch.compile
-def RUN_PYTORCH(w, k, B, C, T, eps):
+def RUN_PYTORCH(weight, k, B, C, T, eps):
     # this shall equal the formula
     # return nn.Conv1d(nn.ZeroPad2d((T-1, 0, 0, 0))(k), w.unsqueeze(1), groups=C) + eps
-    m = nn.Conv1d(16, 33, 3, groups=C)
-    output = m(nn.ZeroPad2d((T-1, 0, 0, 0))(k))
+    # m = nn.Conv1d(16, 33, 3, groups=C)
+    # output = m(nn.ZeroPad2d((T-1, 0, 0, 0))(k))
     
-    return F.conv1d(nn.ZeroPad2d((T-1, 0, 0, 0))(k), w.unsqueeze(1),groups=C) + eps
+    return F.conv1d(nn.ZeroPad2d((T-1, 0, 0, 0))(k), weight.unsqueeze(1),groups=C) + eps
 
 
 def set_seed(seed):
@@ -59,11 +63,11 @@ def CHECK_PYTORCH():
     eps = 0.1
 
     set_seed(42)
-    window = torch.rand(5, 11, requires_grad=True, device='cuda')
+    weight = torch.rand(5, 11, requires_grad=True, device='cuda')
     k = torch.rand(3, 5, 11, requires_grad=True, device='cuda')
 
-    r0 = RUN_FORMULA_VERY_SLOW(window, k, 3, 5, 11, eps)
-    r1 = RUN_PYTORCH(window, k, 3, 5, 11, eps)
+    r0 = RUN_FORMULA_VERY_SLOW(weight, k, 3, 5, 11, eps)
+    r1 = RUN_PYTORCH(weight, k, 3, 5, 11, eps)
 
     print('--> pytorch correct =', torch.allclose(r0, r1))
 
